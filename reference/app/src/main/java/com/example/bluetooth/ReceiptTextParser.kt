@@ -126,7 +126,7 @@ class ReceiptTextParser {
         // 영수증 자르기
         fun 영수증자르기(outputStream: OutputStream) {
             try {
-                outputStream.write(PrinterCommand.POS_Set_PrtAndFeedPaper(5))
+                outputStream.write(PrinterCommand.POS_Cut_Paper_Multiple_Try())
             } catch (e: IOException) {
                 Log.e(TAG, "영수증 자르기 오류: ${e.message}")
             }
@@ -152,7 +152,7 @@ class ReceiptTextParser {
                         
                         line == "영수증 자르기" -> {
                             // 용지 자르기 명령
-                            outputStream.write(PrinterCommand.POS_Set_PrtAndFeedPaper(5))
+                            outputStream.write(PrinterCommand.POS_Cut_Paper_Multiple_Try())
                             break
                         }
                         

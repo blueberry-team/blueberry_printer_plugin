@@ -7,9 +7,12 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import android.bluetooth.BluetoothSocket
 import java.io.OutputStream
+import android.util.Log
+import com.example.bluberry_printer.data.DataSampleReceipts
+import com.example.bluberry_printer.logic.LogicReceiptProcessor
 
-/** BluberryPrinterPlugin */
-class BluberryPrinterPlugin: FlutterPlugin, MethodCallHandler {
+/** BridgeFlutterPlugin */
+class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
@@ -107,10 +110,12 @@ class BluberryPrinterPlugin: FlutterPlugin, MethodCallHandler {
         }
         
         try {
-          ReceiptTextParser.parseAndPrint(stream, receiptText)
+          Log.d("BridgeFlutterPlugin", "커스텀 영수증 출력 시작: $receiptText")
+          LogicReceiptProcessor.parseAndPrint(stream, receiptText)
           result.success(true)
         } catch (e: Exception) {
-          result.error("PRINT_FAIL", "출력 실패: ${e.message}", null)
+          Log.e("BridgeFlutterPlugin", "커스텀 영수증 출력 실패", e)
+          result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
       "printSampleReceipt" -> {
@@ -121,10 +126,13 @@ class BluberryPrinterPlugin: FlutterPlugin, MethodCallHandler {
         }
         
         try {
-          KoreanImagePrinter.printKoreanReceiptSample(stream)
+          Log.d("BridgeFlutterPlugin", "샘플 영수증 출력 시작")
+          // 샘플 영수증도 동일한 방식으로 처리
+          LogicReceiptProcessor.parseAndPrint(stream, DataSampleReceipts.sampleReceiptData)
           result.success(true)
         } catch (e: Exception) {
-          result.error("PRINT_FAIL", "샘플 영수증 출력 실패: ${e.message}", null)
+          Log.e("BridgeFlutterPlugin", "샘플 영수증 출력 실패", e)
+          result.error("PRINT_FAIL", "샘플 영수증 출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
       "disconnect" -> {
@@ -154,4 +162,4 @@ class BluberryPrinterPlugin: FlutterPlugin, MethodCallHandler {
     currentSocket = null
     outputStream = null
   }
-}
+} 

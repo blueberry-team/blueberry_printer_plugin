@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:bluberry_printer/bluberry_printer.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'sample_receipts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -156,37 +155,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _printCustomReceipt() async {
-    const receiptText = '''
-[TITLE]카페 블루베리[/TITLE]
-
-[STORE_INFO]
-서울특별시 강남구 테헤란로 123
-전화: 02-1234-5678
-사업자등록번호: 123-45-67890
-[/STORE_INFO]
-
-[SEPARATOR]
-
-[ITEM_LIST]
-아메리카노 (ICE)        4,500원 x 2
-카페라떼 (HOT)          5,000원 x 1
-블루베리 머핀           3,500원 x 1
-[/ITEM_LIST]
-
-[TOTAL]
-소계: 17,500원
-부가세: 1,750원
-합계: 19,250원
-[/TOTAL]
-
-[THANK_YOU]
-감사합니다!
-다음에 또 방문해 주세요.
-[/THANK_YOU]
-    ''';
-
     try {
-      final success = await _bluberryPrinterPlugin.printReceipt(receiptText);
+      final success = await _bluberryPrinterPlugin.printReceipt(SampleReceipts.customReceipt);
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

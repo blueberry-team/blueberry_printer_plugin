@@ -1,6 +1,6 @@
-package com.example.bluberry_printer
+package com.example.bluberry_printer.data
 
-object SampleMockData {
+object DataSampleReceipts {
     
     // 개별 섹션 텍스트 데이터
     const val TITLE_TEXT = "*** 영수증 ***"

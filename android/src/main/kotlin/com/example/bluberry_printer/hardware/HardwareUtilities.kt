@@ -1,6 +1,6 @@
-package com.example.bluberry_printer
+package com.example.bluberry_printer.hardware
 
-class Other {
+class HardwareUtilities {
     companion object {
         // 여러 byte[]를 하나로 합침
         fun byteArraysToBytes(data: Array<ByteArray?>): ByteArray {

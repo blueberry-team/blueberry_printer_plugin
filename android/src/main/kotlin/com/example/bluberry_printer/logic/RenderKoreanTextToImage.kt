@@ -1,12 +1,14 @@
-package com.example.bluberry_printer
+package com.example.bluberry_printer.logic
 
 import android.graphics.*
 import android.util.Log
 import java.io.IOException
 import java.io.OutputStream
+import com.example.bluberry_printer.data.DataSampleReceipts
+import com.example.bluberry_printer.hardware.HardwarePrinterCommands
 
-object KoreanImagePrinter {
-    private const val TAG = "KoreanImagePrinter"
+object RenderKoreanTextToImage {
+    private const val TAG = "RenderKoreanTextToImage"
 
     // 텍스트 정렬 enum
     enum class TextAlign {
@@ -16,21 +18,6 @@ object KoreanImagePrinter {
     // 종이(프린터) 설정
     private const val PAPER_WIDTH_PX = 576 // 일반적인 58mm 프린터 기준 (약 576픽셀)
     private const val MARGIN_PX = 20
-
-    // 섹션별 기본 설정
-    private val sectionSettings = mapOf(
-        "타이틀" to Triple(true, TextAlign.CENTER, 24f),      // 굵기, 정렬, 기본크기
-        "매장정보" to Triple(false, TextAlign.CENTER, 16f),
-        "구분선" to Triple(false, TextAlign.CENTER, 14f),
-        "상품목록" to Triple(false, TextAlign.CENTER, 14f),
-        "합계" to Triple(true, TextAlign.RIGHT, 16f),
-        "감사메시지" to Triple(false, TextAlign.CENTER, 16f)
-    )
-
-    // 샘플 영수증 출력 함수
-    fun printKoreanReceiptSample(outputStream: OutputStream) {
-        ReceiptTextParser.parseAndPrint(outputStream, SampleMockData.sampleReceiptData)
-    }
 
     // 텍스트를 이미지로 변환하는 함수 (종이 크기 기준 정렬)
     fun createTextImage(text: String, textSize: Float, isBold: Boolean, align: TextAlign = TextAlign.LEFT): Bitmap {
@@ -92,6 +79,6 @@ object KoreanImagePrinter {
             }
         }
 
-        return PrinterCommand.POS_Print_Bitmap(imageData, width, height)
+        return HardwarePrinterCommands.POS_Print_Bitmap(imageData, width, height)
     }
 } 
