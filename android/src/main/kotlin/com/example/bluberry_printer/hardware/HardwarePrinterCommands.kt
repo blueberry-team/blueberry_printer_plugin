@@ -62,7 +62,7 @@ class HardwarePrinterCommands {
          * @param feedLines 자르기 전 용지 이동 줄 수
          * @return 자르기 명령 바이트 배열
          */
-        fun POS_Cut_Paper_With_Feed(feedLines: Int = 3): ByteArray {
+        fun POS_Cut_Paper_With_Feed(feedLines: Int): ByteArray {
             val commands = mutableListOf<Byte>()
             
             // 1. 용지 이동
@@ -82,29 +82,5 @@ class HardwarePrinterCommands {
          * @param feedLines 자르기 전 용지 이동 줄 수
          * @return 자르기 명령 바이트 배열
          */
-        fun POS_Cut_Paper_Multiple_Try(feedLines: Int = 3): ByteArray {
-            val commands = mutableListOf<Byte>()
-            
-            // 1. 용지 이동
-            val feedCommand = POS_Set_PrtAndFeedPaper(feedLines)
-            if (feedCommand != null) {
-                commands.addAll(feedCommand.toList())
-            }
-            
-            // 2. 여러 자르기 명령 시도
-            // 방법 1: GS V 0 (전체 자르기)
-            commands.addAll(HardwareEscPosConstants.GS_V_n.toList())
-            
-            // 방법 2: GS V B 0 (부분 자르기)
-            commands.addAll(HardwareEscPosConstants.GS_V_m_n.toList())
-            
-            // 방법 3: ESC i
-            commands.addAll(HardwareEscPosConstants.GS_i.toList())
-            
-            // 방법 4: ESC m
-            commands.addAll(HardwareEscPosConstants.GS_m.toList())
-            
-            return commands.toByteArray()
-        }
     }
 } 

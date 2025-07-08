@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:bluberry_printer/bluberry_printer.dart';
 import 'sample_receipts.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -60,7 +61,37 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<bool> _requestBluetoothPermissions() async {
+    Map<Permission, PermissionStatus> permissions = await [
+      Permission.bluetooth,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect,
+      Permission.bluetoothAdvertise,
+      Permission.location,
+      Permission.locationWhenInUse,
+    ].request();
+
+    bool allGranted = permissions.values.every((status) => 
+      status == PermissionStatus.granted || status == PermissionStatus.limited);
+
+    if (!allGranted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('블루투스 권한이 필요합니다. 설정에서 권한을 허용해주세요.')),
+        );
+      }
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _searchDevices() async {
+    // 권한 요청
+    if (!await _requestBluetoothPermissions()) {
+      return;
+    }
+
     setState(() {
       _isScanning = true;
       _devices = [];

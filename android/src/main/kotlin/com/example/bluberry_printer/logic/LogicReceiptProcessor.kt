@@ -15,7 +15,7 @@ class LogicReceiptProcessor {
         private const val TAG = "LogicReceiptProcessor"
         
         // 프린터 초기화
-        fun 초기화(outputStream: OutputStream) {
+        fun initialize(outputStream: OutputStream) {
             try {
                 outputStream.write(HardwarePrinterCommands.POS_Set_PrtInit())
             } catch (e: Exception) {
@@ -24,7 +24,7 @@ class LogicReceiptProcessor {
         }
         
         // 타이틀 출력
-        fun 타이틀출력(outputStream: OutputStream) {
+        fun printTitle(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.TITLE_TEXT, 
@@ -40,7 +40,7 @@ class LogicReceiptProcessor {
         }
         
         // 매장정보 출력
-        fun 매장정보출력(outputStream: OutputStream) {
+        fun printStoreInfo(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.STORE_INFO_TEXT, 
@@ -56,7 +56,7 @@ class LogicReceiptProcessor {
         }
         
         // 구분선 출력
-        fun 구분선출력(outputStream: OutputStream) {
+        fun printSeparator(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.SEPARATOR_TEXT, 
@@ -72,7 +72,7 @@ class LogicReceiptProcessor {
         }
         
         // 상품목록 출력
-        fun 상품목록출력(outputStream: OutputStream) {
+        fun printItems(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.ITEMS_TEXT, 
@@ -88,7 +88,7 @@ class LogicReceiptProcessor {
         }
         
         // 합계 출력
-        fun 합계출력(outputStream: OutputStream) {
+        fun printTotal(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.TOTAL_TEXT, 
@@ -104,7 +104,7 @@ class LogicReceiptProcessor {
         }
         
         // 감사메시지 출력
-        fun 감사메시지출력(outputStream: OutputStream) {
+        fun printThankYou(outputStream: OutputStream) {
             try {
                 val image = RenderKoreanTextToImage.createTextImage(
                     DataSampleReceipts.THANK_YOU_TEXT, 
@@ -120,14 +120,26 @@ class LogicReceiptProcessor {
         }
         
         // 줄바꿈
-        fun 줄바꿈(outputStream: OutputStream, 줄수: Int = 1) {
+        fun feedPaper(outputStream: OutputStream, lines: Int = 1) {
             try {
-                val feedCommand = HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(줄수)
+                val feedCommand = HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(lines)
                 if (feedCommand != null) {
                     outputStream.write(feedCommand)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "줄바꿈 오류: ${e.message}")
+            }
+        }
+        
+        // 영수증 자르기
+        fun cutPaper(outputStream: OutputStream) {
+            try {
+                outputStream.write(HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(200))
+                outputStream.write(HardwareEscPosConstants.GS_V_n)
+                outputStream.flush()
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "영수증 자르기 오류: ${e.message}")
             }
         }
         
@@ -156,6 +168,12 @@ class LogicReceiptProcessor {
                             continue
                         }
                         
+                        line == "영수증 자르기" -> {
+                            // 영수증 자르기 명령
+                            cutPaper(outputStream)
+                            Log.d(TAG, "영수증 자르기 완료")
+                        }
+                        
                         line.contains(", ") && line.split(", ").size == 2 -> {
                             // 섹션 헤더 (예: "타이틀, 24")
                             val parts = line.split(", ")
@@ -171,7 +189,8 @@ class LogicReceiptProcessor {
                             while (i < lines.size) {
                                 val contentLine = lines[i].trim()
                                 if (contentLine.isEmpty() || 
-                                    (contentLine.contains(", ") && contentLine.split(", ").size == 2)) {
+                                    (contentLine.contains(", ") && contentLine.split(", ").size == 2) ||
+                                    contentLine == "영수증 자르기") {
                                     break
                                 }
                                 contentLines.add(contentLine)
@@ -183,6 +202,7 @@ class LogicReceiptProcessor {
                                 val content = contentLines.joinToString("\n")
                                 Log.d(TAG, "섹션 내용: '$content'")
                                 
+                                // 섹션별 기본 설정
                                 val sectionSettings = mapOf(
                                     "타이틀" to Triple(true, RenderKoreanTextToImage.TextAlign.CENTER, 24f),
                                     "매장정보" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 16f),
