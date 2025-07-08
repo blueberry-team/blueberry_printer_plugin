@@ -56,31 +56,4 @@ class HardwarePrinterCommands {
             
             return command
         }
-
-        /**
-         * 영수증 자르기 (용지 이동 후 자르기)
-         * @param feedLines 자르기 전 용지 이동 줄 수
-         * @return 자르기 명령 바이트 배열
-         */
-        fun POS_Cut_Paper_With_Feed(feedLines: Int): ByteArray {
-            val commands = mutableListOf<Byte>()
-            
-            // 1. 용지 이동
-            val feedCommand = POS_Set_PrtAndFeedPaper(feedLines)
-            if (feedCommand != null) {
-                commands.addAll(feedCommand.toList())
-            }
-            
-            // 2. 자르기 명령 (GS V 0 - 전체 자르기)
-            commands.addAll(HardwareEscPosConstants.GS_V_n.toList())
-            
-            return commands.toByteArray()
-        }
-
-        /**
-         * 영수증 자르기 (다양한 방법 시도)
-         * @param feedLines 자르기 전 용지 이동 줄 수
-         * @return 자르기 명령 바이트 배열
-         */
-    }
 } 
