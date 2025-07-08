@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Bluetooth 권한 설정 -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>이 앱은 Bluetooth 프린터와 연결하여 영수증을 인쇄하기 위해 Bluetooth를 사용합니다.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>이 앱은 Bluetooth 프린터와 연결하여 영수증을 인쇄하기 위해 Bluetooth를 사용합니다.</string>
 </dict>
 </plist>
