@@ -1,6 +1,6 @@
 class SampleReceipts {
   // 커스텀 영수증 샘플
-  static const String customReceipt = '''타이틀, 40
+  static const String customReceipt = '''타이틀, 80
 카페 블루베리
 
 매장정보, 20
