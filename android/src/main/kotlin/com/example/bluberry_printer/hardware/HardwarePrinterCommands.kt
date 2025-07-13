@@ -56,4 +56,5 @@ class HardwarePrinterCommands {
             
             return command
         }
-} 
+    }
+}
