@@ -21,8 +21,7 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   s.pod_target_xcconfig = { 
     'DEFINES_MODULE' => 'YES', 
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
-    'SWIFT_OBJC_BRIDGING_HEADER' => '$(PODS_TARGET_SRCROOT)/Classes/BluberryPrinterPlugin-Bridging-Header.h',
-    'HEADER_SEARCH_PATHS' => '$(PODS_TARGET_SRCROOT)/Classes/PrinterSDK'
+    'SWIFT_OBJC_BRIDGING_HEADER' => '$(PODS_TARGET_SRCROOT)/Classes/BluberryPrinterPlugin-Bridging-Header.h'
   }
   s.swift_version = '5.0'
   

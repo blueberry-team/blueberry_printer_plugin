@@ -51,5 +51,11 @@
 	<string>이 앱은 Bluetooth 프린터와 연결하여 영수증을 인쇄하기 위해 Bluetooth를 사용합니다.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>이 앱은 Bluetooth 프린터와 연결하여 영수증을 인쇄하기 위해 Bluetooth를 사용합니다.</string>
+	
+	<!-- 위치 권한 설정 (블루투스 스캔에 필요) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>이 앱은 Bluetooth 프린터를 검색하기 위해 위치 정보를 사용합니다.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>이 앱은 Bluetooth 프린터를 검색하기 위해 위치 정보를 사용합니다.</string>
 </dict>
 </plist>
