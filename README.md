@@ -1,12 +1,12 @@
-# 🖨️ Bluberry Printer
+# 🖨️ Blueberry Printer
 
-[![pub package](https://img.shields.io/pub/v/bluberry_printer.svg)](https://pub.dev/packages/bluberry_printer)
+[![pub package](https://img.shields.io/pub/v/blueberry_printer.svg)](https://pub.dev/packages/blueberry_printer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://android.com)
 
 **한국어 영수증 출력을 지원하는 블루투스 프린터 Flutter 플러그인**
 
-Bluberry Printer는 ESC/POS 명령을 사용하여 블루투스 프린터에서 한국어 영수증을 출력할 수 있는 Flutter 플러그인입니다. 텍스트를 이미지로 변환하여 한글 폰트 문제를 해결하고, 깔끔한 영수증 레이아웃을 제공합니다.
+Blueberry Printer는 ESC/POS 명령을 사용하여 블루투스 프린터에서 한국어 영수증을 출력할 수 있는 Flutter 플러그인입니다. 텍스트를 이미지로 변환하여 한글 폰트 문제를 해결하고, 깔끔한 영수증 레이아웃을 제공합니다.
 
 ## ✨ 주요 기능
 
@@ -25,7 +25,7 @@ Bluberry Printer는 ESC/POS 명령을 사용하여 블루투스 프린터에서 
 
 ```yaml
 dependencies:
-  bluberry_printer: ^1.0.0
+  blueberry_printer: ^1.0.0
 ```
 
 그리고 패키지를 설치하세요:
@@ -54,7 +54,7 @@ flutter pub get
 ### 기본 사용법
 
 ```dart
-import 'package:bluberry_printer/bluberry_printer.dart';
+import 'package:blueberry_printer/blueberry_printer.dart';
 
 class PrinterExample extends StatefulWidget {
   @override
@@ -62,7 +62,7 @@ class PrinterExample extends StatefulWidget {
 }
 
 class _PrinterExampleState extends State<PrinterExample> {
-  final _printer = BluberryPrinter();
+  final _printer = BlueberryPrinter();
   List<Map<String, String>> _devices = [];
   bool _isConnected = false;
 
@@ -269,4 +269,4 @@ flutter run
 
 ---
 
-💙 **Bluberry Printer**로 더 나은 영수증 출력 경험을 만들어보세요!
+💙 **Blueberry Printer**로 더 나은 영수증 출력 경험을 만들어보세요!

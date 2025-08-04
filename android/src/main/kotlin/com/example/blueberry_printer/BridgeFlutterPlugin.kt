@@ -1,4 +1,4 @@
-package com.example.bluberry_printer
+package com.example.blueberry_printer
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -8,8 +8,8 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.bluetooth.BluetoothSocket
 import java.io.OutputStream
 import android.util.Log
-import com.example.bluberry_printer.data.DataSampleReceipts
-import com.example.bluberry_printer.logic.LogicReceiptProcessor
+import com.example.blueberry_printer.data.DataSampleReceipts
+import com.example.blueberry_printer.logic.LogicReceiptProcessor
 
 /** BridgeFlutterPlugin */
 class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
@@ -24,7 +24,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
   private var outputStream: OutputStream? = null
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "bluberry_printer")
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "blueberry_printer")
     channel.setMethodCallHandler(this)
   }
 

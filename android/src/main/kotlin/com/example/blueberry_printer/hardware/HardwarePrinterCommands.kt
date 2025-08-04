@@ -1,4 +1,4 @@
-package com.example.bluberry_printer.hardware
+package com.example.blueberry_printer.hardware
 
 import java.io.UnsupportedEncodingException
 

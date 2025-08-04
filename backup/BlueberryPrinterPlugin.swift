@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 import CoreBluetooth
 
-public class BluberryPrinterPlugin: NSObject, FlutterPlugin {
+public class BlueberryPrinterPlugin: NSObject, FlutterPlugin {
     private var discoveredPrinters: [String: Printer] = [:]
     private var isScanning = false
     private var scanCallback: FlutterResult?
@@ -11,8 +11,8 @@ public class BluberryPrinterPlugin: NSObject, FlutterPlugin {
     private var printerSDK: PrinterSDK?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "bluberry_printer", binaryMessenger: registrar.messenger())
-        let instance = BluberryPrinterPlugin()
+        let channel = FlutterMethodChannel(name: "blueberry_printer", binaryMessenger: registrar.messenger())
+        let instance = BlueberryPrinterPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
     
@@ -210,7 +210,7 @@ public class BluberryPrinterPlugin: NSObject, FlutterPlugin {
 }
 
 // MARK: - CBCentralManagerDelegate (더 이상 사용하지 않음)
-extension BluberryPrinterPlugin: CBCentralManagerDelegate {
+extension BlueberryPrinterPlugin: CBCentralManagerDelegate {
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:

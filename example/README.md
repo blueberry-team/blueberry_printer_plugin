@@ -1,6 +1,6 @@
-# bluberry_printer_example
+# blueberry_printer_example
 
-Demonstrates how to use the bluberry_printer plugin.
+Demonstrates how to use the blueberry_printer plugin.
 
 ## Getting Started
 

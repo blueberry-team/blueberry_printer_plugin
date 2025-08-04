@@ -1,13 +1,13 @@
-package com.example.bluberry_printer.logic
+package com.example.blueberry_printer.logic
 
 import java.io.OutputStream
 import android.util.Log
 import kotlin.text.Charsets
-import com.example.bluberry_printer.hardware.HardwareEscPosConstants
-import com.example.bluberry_printer.hardware.HardwareUtilities
-import com.example.bluberry_printer.logic.RenderKoreanTextToImage
-import com.example.bluberry_printer.data.DataSampleReceipts
-import com.example.bluberry_printer.hardware.HardwarePrinterCommands
+import com.example.blueberry_printer.hardware.HardwareEscPosConstants
+import com.example.blueberry_printer.hardware.HardwareUtilities
+import com.example.blueberry_printer.logic.RenderKoreanTextToImage
+import com.example.blueberry_printer.data.DataSampleReceipts
+import com.example.blueberry_printer.hardware.HardwarePrinterCommands
 
 class LogicReceiptProcessor {
     

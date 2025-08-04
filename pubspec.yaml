@@ -1,4 +1,4 @@
-name: bluberry_printer
+name: blueberry_printer
 description: "A new Flutter plugin project."
 version: 0.0.1
 homepage:
@@ -35,10 +35,10 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.bluberry_printer
+        package: com.example.blueberry_printer
         pluginClass: BridgeFlutterPlugin
       ios:
-        pluginClass: BluberryPrinterPlugin
+        pluginClass: BlueberryPrinterPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

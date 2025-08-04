@@ -1,9 +1,9 @@
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
-# Run `pod lib lint bluberry_printer.podspec` to validate before publishing.
+# Run `pod lib lint blueberry_printer.podspec` to validate before publishing.
 #
 Pod::Spec.new do |s|
-  s.name             = 'bluberry_printer'
+  s.name             = 'blueberry_printer'
   s.version          = '0.0.1'
   s.summary          = 'A Flutter plugin for Bluetooth printer connection and receipt printing with Korean support.'
   s.description      = <<-DESC
@@ -32,6 +32,6 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   
   # 개인정보 보호 매니페스트 (iOS 17+)
   # s.resource_bundles = {
-  #   'bluberry_printer_privacy' => ['Resources/PrivacyInfo.xcprivacy']
+  #   'blueberry_printer_privacy' => ['Resources/PrivacyInfo.xcprivacy']
   # }
 end

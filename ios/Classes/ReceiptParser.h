@@ -1,6 +1,6 @@
 //
 //  ReceiptParser.h
-//  bluberry_printer
+//  blueberry_printer
 //
 //  Created for Flutter plugin
 //

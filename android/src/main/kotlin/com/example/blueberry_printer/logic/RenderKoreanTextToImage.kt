@@ -1,11 +1,11 @@
-package com.example.bluberry_printer.logic
+package com.example.blueberry_printer.logic
 
 import android.graphics.*
 import android.util.Log
 import java.io.IOException
 import java.io.OutputStream
-import com.example.bluberry_printer.data.DataSampleReceipts
-import com.example.bluberry_printer.hardware.HardwarePrinterCommands
+import com.example.blueberry_printer.data.DataSampleReceipts
+import com.example.blueberry_printer.hardware.HardwarePrinterCommands
 
 object RenderKoreanTextToImage {
     private const val TAG = "RenderKoreanTextToImage"

@@ -5,30 +5,30 @@
 // platforms in the `pubspec.yaml` at
 // https://flutter.dev/to/pubspec-plugin-platforms.
 
-import 'bluberry_printer_platform_interface.dart';
+import 'blueberry_printer_platform_interface.dart';
 
-class BluberryPrinter {
+class BlueberryPrinter {
   Future<String?> getPlatformVersion() {
-    return BluberryPrinterPlatform.instance.getPlatformVersion();
+    return BlueberryPrinterPlatform.instance.getPlatformVersion();
   }
 
   Future<List<Map<String, String>>> searchDevices() {
-    return BluberryPrinterPlatform.instance.searchDevices();
+    return BlueberryPrinterPlatform.instance.searchDevices();
   }
 
   Future<bool> connectDevice(String address) {
-    return BluberryPrinterPlatform.instance.connectDevice(address);
+    return BlueberryPrinterPlatform.instance.connectDevice(address);
   }
 
   Future<bool> printReceipt(String receiptText) {
-    return BluberryPrinterPlatform.instance.printReceipt(receiptText);
+    return BlueberryPrinterPlatform.instance.printReceipt(receiptText);
   }
 
   Future<bool> printSampleReceipt() {
-    return BluberryPrinterPlatform.instance.printSampleReceipt();
+    return BlueberryPrinterPlatform.instance.printSampleReceipt();
   }
 
   Future<bool> disconnect() {
-    return BluberryPrinterPlatform.instance.disconnect();
+    return BlueberryPrinterPlatform.instance.disconnect();
   }
 }

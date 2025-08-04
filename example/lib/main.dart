@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:bluberry_printer/bluberry_printer.dart';
+import 'package:blueberry_printer/blueberry_printer.dart';
 import 'sample_receipts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -33,7 +33,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _bluberryPrinterPlugin = BluberryPrinter();
+  final _blueberryPrinterPlugin = BlueberryPrinter();
   String _platformVersion = 'Unknown';
   List<Map<String, String>> _devices = [];
   bool _isScanning = false;
@@ -49,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> initPlatformState() async {
     String platformVersion;
     try {
-      platformVersion = await _bluberryPrinterPlugin.getPlatformVersion() ?? 'Unknown platform version';
+      platformVersion = await _blueberryPrinterPlugin.getPlatformVersion() ?? 'Unknown platform version';
     } catch (e) {
       platformVersion = 'Failed to get platform version: $e';
     }
@@ -172,7 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     try {
       print("🔍 [DEBUG] 플러그인 호출: searchDevices() 시작");
-      final devices = await _bluberryPrinterPlugin.searchDevices();
+      final devices = await _blueberryPrinterPlugin.searchDevices();
       print("🔍 [DEBUG] 플러그인 응답 받음: ${devices.length}개 기기");
       
       // 각 기기 정보 출력
@@ -211,7 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _connectDevice(String address, String name) async {
     print("🔍 [DEBUG] Flutter: 연결 시도 - $name ($address)");
     try {
-      final success = await _bluberryPrinterPlugin.connectDevice(address);
+      final success = await _blueberryPrinterPlugin.connectDevice(address);
       print("🔍 [DEBUG] Flutter: 연결 결과 - $success");
       if (success) {
         setState(() {
@@ -251,7 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _disconnect() async {
     try {
-      final success = await _bluberryPrinterPlugin.disconnect();
+      final success = await _blueberryPrinterPlugin.disconnect();
       if (success) {
         setState(() {
           _isConnected = false;
@@ -275,7 +275,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _printSampleReceipt() async {
     print("🔍 [DEBUG] Flutter: 샘플 영수증 출력 시도");
     try {
-      final success = await _bluberryPrinterPlugin.printSampleReceipt();
+      final success = await _blueberryPrinterPlugin.printSampleReceipt();
       print("🔍 [DEBUG] Flutter: 출력 결과 - $success");
       if (success) {
         if (mounted) {
@@ -311,7 +311,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _printCustomReceipt() async {
     try {
-      final success = await _bluberryPrinterPlugin.printReceipt(SampleReceipts.customReceipt);
+      final success = await _blueberryPrinterPlugin.printReceipt(SampleReceipts.customReceipt);
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

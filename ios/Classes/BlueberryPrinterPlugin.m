@@ -1,14 +1,14 @@
 //
-//  BluberryPrinterPlugin.m
-//  bluberry_printer
+//  BlueberryPrinterPlugin.m
+//  blueberry_printer
 //
 //  Created for Flutter plugin
 //
 
-#import "BluberryPrinterPlugin.h"
+#import "BlueberryPrinterPlugin.h"
 #import "ReceiptParser.h"
 
-@interface BluberryPrinterPlugin ()
+@interface BlueberryPrinterPlugin ()
 {
     NSMutableDictionary* _discoveredPrinters;
     FlutterResult _scanCallback;
@@ -17,13 +17,13 @@
 }
 @end
 
-@implementation BluberryPrinterPlugin
+@implementation BlueberryPrinterPlugin
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     FlutterMethodChannel* channel = [FlutterMethodChannel
-                                    methodChannelWithName:@"bluberry_printer"
+                                    methodChannelWithName:@"blueberry_printer"
                                     binaryMessenger:[registrar messenger]];
-    BluberryPrinterPlugin* instance = [[BluberryPrinterPlugin alloc] init];
+    BlueberryPrinterPlugin* instance = [[BlueberryPrinterPlugin alloc] init];
     [registrar addMethodCallDelegate:instance channel:channel];
 }
 

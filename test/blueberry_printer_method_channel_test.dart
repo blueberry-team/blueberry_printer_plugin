@@ -1,12 +1,12 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bluberry_printer/bluberry_printer_method_channel.dart';
+import 'package:blueberry_printer/blueberry_printer_method_channel.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MethodChannelBluberryPrinter platform = MethodChannelBluberryPrinter();
-  const MethodChannel channel = MethodChannel('bluberry_printer');
+  MethodChannelBlueberryPrinter platform = MethodChannelBlueberryPrinter();
+  const MethodChannel channel = MethodChannel('blueberry_printer');
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(

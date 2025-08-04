@@ -1,24 +1,24 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import 'bluberry_printer_method_channel.dart';
+import 'blueberry_printer_method_channel.dart';
 
-abstract class BluberryPrinterPlatform extends PlatformInterface {
-  /// Constructs a BluberryPrinterPlatform.
-  BluberryPrinterPlatform() : super(token: _token);
+abstract class BlueberryPrinterPlatform extends PlatformInterface {
+  /// Constructs a BlueberryPrinterPlatform.
+  BlueberryPrinterPlatform() : super(token: _token);
 
   static final Object _token = Object();
 
-  static BluberryPrinterPlatform _instance = MethodChannelBluberryPrinter();
+  static BlueberryPrinterPlatform _instance = MethodChannelBlueberryPrinter();
 
-  /// The default instance of [BluberryPrinterPlatform] to use.
+  /// The default instance of [BlueberryPrinterPlatform] to use.
   ///
-  /// Defaults to [MethodChannelBluberryPrinter].
-  static BluberryPrinterPlatform get instance => _instance;
+  /// Defaults to [MethodChannelBlueberryPrinter].
+  static BlueberryPrinterPlatform get instance => _instance;
 
   /// Platform-specific implementations should set this with their own
-  /// platform-specific class that extends [BluberryPrinterPlatform] when
+  /// platform-specific class that extends [BlueberryPrinterPlatform] when
   /// they register themselves.
-  static set instance(BluberryPrinterPlatform instance) {
+  static set instance(BlueberryPrinterPlatform instance) {
     PlatformInterface.verifyToken(instance, _token);
     _instance = instance;
   }

@@ -1,4 +1,4 @@
-package com.example.bluberry_printer.data
+package com.example.blueberry_printer.data
 
 object DataSampleReceipts {
     
