@@ -261,6 +261,7 @@
     NSDictionary* orderData = arguments[@"orderData"];
     NSString* storeName = arguments[@"storeName"] ?: @"매장명 없음";
     NSString* language = arguments[@"language"] ?: @"kor";
+    NSString* currency = arguments[@"currency"] ?: @"KRW";
     
     NSLog(@"🔍 [DEBUG] iOS 매장명: %@, 언어: %@", storeName, language);
     printf("🔍 [DEBUG] iOS 매장명: %s, 언어: %s\n", [storeName UTF8String], [language UTF8String]);
@@ -278,6 +279,7 @@
             if ([key isEqualToString:@"tax"]) return @"Tax";
             if ([key isEqualToString:@"total"]) return @"Total";
             if ([key isEqualToString:@"thank_you_default"]) return @"Thank you!\nPlease visit us again.";
+            if ([key isEqualToString:@"thank_you_message"]) return @"Thank You Message";
             if ([key isEqualToString:@"phone"]) return @"Phone";
             if ([key isEqualToString:@"business_number"]) return @"Business No";
             if ([key isEqualToString:@"no_order_number"]) return @"No order number";
@@ -292,6 +294,7 @@
             if ([key isEqualToString:@"tax"]) return @"税金";
             if ([key isEqualToString:@"total"]) return @"合計";
             if ([key isEqualToString:@"thank_you_default"]) return @"ありがとうございます！\nまたお越しください。";
+            if ([key isEqualToString:@"thank_you_message"]) return @"メッセージ";
             if ([key isEqualToString:@"phone"]) return @"電話";
             if ([key isEqualToString:@"business_number"]) return @"事業者番号";
             if ([key isEqualToString:@"no_order_number"]) return @"注文番号なし";
@@ -306,12 +309,21 @@
             if ([key isEqualToString:@"tax"]) return @"부가세";
             if ([key isEqualToString:@"total"]) return @"합계";
             if ([key isEqualToString:@"thank_you_default"]) return @"감사합니다!\n다음에 또 방문해 주세요.";
+            if ([key isEqualToString:@"thank_you_message"]) return @"감사메시지";
             if ([key isEqualToString:@"phone"]) return @"전화";
             if ([key isEqualToString:@"business_number"]) return @"사업자등록번호";
             if ([key isEqualToString:@"no_order_number"]) return @"주문번호 없음";
             if ([key isEqualToString:@"no_table_info"]) return @"테이블 정보 없음";
         }
         return key;
+    };
+    
+    // 화폐 단위 헬퍼 함수
+    NSString* (^getCurrencySymbol)(void) = ^NSString*(void) {
+        if ([currency isEqualToString:@"USD"]) return @"$";
+        if ([currency isEqualToString:@"JPY"]) return @"¥";
+        if ([currency isEqualToString:@"EUR"]) return @"€";
+        return @"원"; // KRW 기본값
     };
     
     @try {
@@ -333,8 +345,10 @@
                 if (orderItems && [orderItems isKindOfClass:[NSArray class]]) {
                     for (NSDictionary* item in orderItems) {
                         NSNumber* itemPriceNum = item[@"price"];
+                        NSNumber* itemQuantityNum = item[@"quantity"];
                         NSInteger itemPrice = itemPriceNum ? [itemPriceNum integerValue] : 0;
-                        calculatedTotalPrice += itemPrice;
+                        NSInteger itemQuantity = itemQuantityNum ? [itemQuantityNum integerValue] : 0;
+                        calculatedTotalPrice += (itemPrice * itemQuantity);
                         
                         // 옵션 가격도 추가
                         NSArray* options = item[@"options"];
@@ -401,8 +415,8 @@
                         NSInteger quantity = quantityNum ? [quantityNum integerValue] : 0;
                         NSInteger price = priceNum ? [priceNum integerValue] : 0;
                         
-                        [receiptText appendFormat:@"%@ x%ld = %@원\n", 
-                         menuName, (long)quantity, [self formatPrice:price]];
+                        [receiptText appendFormat:@"%@ x%ld = %@%@\n", 
+                         menuName, (long)quantity, [self formatPrice:price], getCurrencySymbol()];
                         
                         // 옵션 처리
                         NSArray* options = item[@"options"];
@@ -418,8 +432,8 @@
                                         NSInteger itemQuantity = itemQuantityNum ? [itemQuantityNum integerValue] : 0;
                                         
                                         if (itemPrice > 0) {
-                                            [receiptText appendFormat:@"  + %@ x%ld = %@원\n", 
-                                             itemName, (long)itemQuantity, [self formatPrice:itemPrice]];
+                                            [receiptText appendFormat:@"  + %@ x%ld = %@%@\n", 
+                                             itemName, (long)itemQuantity, [self formatPrice:itemPrice], getCurrencySymbol()];
                                         }
                                     }
                                 }
@@ -436,11 +450,7 @@
         
         // 합계 섹션
         [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"total")];
-        [receiptText appendFormat:@"%@: %@원\n", getLocalizedText(@"subtotal"), [self formatPrice:calculatedTotalPrice]];
-        NSInteger tax = (NSInteger)(calculatedTotalPrice * 0.1);
-        NSInteger totalWithTax = calculatedTotalPrice + tax;
-        [receiptText appendFormat:@"%@: %@원\n", getLocalizedText(@"tax"), [self formatPrice:tax]];
-        [receiptText appendFormat:@"%@: %@원\n\n", getLocalizedText(@"total"), [self formatPrice:totalWithTax]];
+        [receiptText appendFormat:@"%@: %@%@\n\n", getLocalizedText(@"total"), [self formatPrice:calculatedTotalPrice], getCurrencySymbol()];
         
         // 줄바꿈 명령
         [receiptText appendString:@"줄바꿈, 2\n\n"];

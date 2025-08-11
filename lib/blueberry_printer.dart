@@ -47,7 +47,8 @@ class BlueberryPrinter {
     String? phoneNumber,
     String? businessNumber,
     String? thankYouMessage,
-    String language = 'kor',
+    String language = 'kor', // kor, eng, jpn
+    String currency = 'KRW', // KRW, USD, JPY, etc.
   }) {
     return BlueberryPrinterPlatform.instance.printOrderReceipt(
       orderData,
@@ -57,6 +58,7 @@ class BlueberryPrinter {
       businessNumber: businessNumber,
       thankYouMessage: thankYouMessage,
       language: language,
+      currency: currency,
     );
   }
 }

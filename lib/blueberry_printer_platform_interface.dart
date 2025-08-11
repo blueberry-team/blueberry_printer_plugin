@@ -63,6 +63,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     String? businessNumber,
     String? thankYouMessage,
     String language = 'kor', // kor, eng, jpn
+    String currency = 'KRW',
   }) {
     throw UnimplementedError('printOrderReceipt() has not been implemented.');
   }

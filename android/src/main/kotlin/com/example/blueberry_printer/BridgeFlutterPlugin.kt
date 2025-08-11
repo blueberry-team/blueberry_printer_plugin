@@ -143,6 +143,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         val businessNumber = call.argument<String>("businessNumber")
         val thankYouMessage = call.argument<String>("thankYouMessage")
         val language = call.argument<String>("language") ?: "kor"
+        val currency = call.argument<String>("currency") ?: "KRW"
         
         if (orderData == null || storeName == null) {
           result.error("NO_DATA", "주문 데이터와 매장명이 필요합니다", null)
@@ -151,6 +152,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         
         Log.d("BridgeFlutterPlugin", "전달받은 주문 데이터: $orderData")
         Log.d("BridgeFlutterPlugin", "매장 정보 - 이름: $storeName, 주소: $storeAddress, 전화: $phoneNumber")
+        Log.d("BridgeFlutterPlugin", "Android printOrderReceipt 호출 - 매장명: $storeName, 언어: $language, 화폐: $currency")
         
         val stream = outputStream
         if (stream == null) {
@@ -161,7 +163,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         try {
           Log.d("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 시작")
           val formattedReceipt = LogicReceiptProcessor.formatOrderReceipt(
-            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language
+            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
           )
           Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")

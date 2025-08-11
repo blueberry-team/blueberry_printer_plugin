@@ -28,7 +28,8 @@ object LogicReceiptProcessor {
             phoneNumber: String? = null,
             businessNumber: String? = null,
             thankYouMessage: String? = null,
-            language: String = "kor"
+            language: String = "kor",
+            currency: String = "KRW"
         ): String {
             val sb = StringBuilder()
             
@@ -86,6 +87,16 @@ object LogicReceiptProcessor {
                 }
             }
             
+            // 화폐 단위 헬퍼 함수
+            fun getCurrencySymbol(): String {
+                return when (currency) {
+                    "USD" -> "$"
+                    "JPY" -> "¥"
+                    "EUR" -> "€"
+                    else -> "원" // KRW 기본값
+                }
+            }
+            
             try {
                 // 주문 기본 정보
                 val orderNumber = orderData["orderNumber"] as? String ?: getLocalizedText("no_order_number")
@@ -98,7 +109,8 @@ object LogicReceiptProcessor {
                     val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
                     for (item in orderItems) {
                         val itemPrice = item["price"] as? Int ?: 0
-                        calculatedTotalPrice += itemPrice
+                        val itemQuantity = item["quantity"] as? Int ?: 0
+                        calculatedTotalPrice += (itemPrice * itemQuantity)
                         
                         // 옵션 가격도 추가
                         val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
@@ -153,7 +165,7 @@ object LogicReceiptProcessor {
                         val quantity = item["quantity"] as? Int ?: 0
                         val price = item["price"] as? Int ?: 0
                         
-                        sb.append("$menuName x$quantity = ${formatPrice(price)}원\n")
+                        sb.append("$menuName x$quantity = ${formatPrice(price)}${getCurrencySymbol()}\n")
                         
                         // 옵션 처리
                         val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
@@ -165,7 +177,7 @@ object LogicReceiptProcessor {
                                 val itemQuantity = selectedItem["quantity"] as? Int ?: 0
                                 
                                 if (itemPrice > 0) {
-                                    sb.append("  + $itemName x$itemQuantity = ${formatPrice(itemPrice)}원\n")
+                                    sb.append("  + $itemName x$itemQuantity = ${formatPrice(itemPrice)}${getCurrencySymbol()}\n")
                                 }
                             }
                         }
@@ -178,11 +190,7 @@ object LogicReceiptProcessor {
                 
                 // 합계 섹션
                 sb.append("${getLocalizedText("total")}, 20\n")
-                sb.append("${getLocalizedText("subtotal")}: ${formatPrice(calculatedTotalPrice)}원\n")
-                val tax = (calculatedTotalPrice * 0.1).toInt()
-                val totalWithTax = calculatedTotalPrice + tax
-                sb.append("${getLocalizedText("tax")}: ${formatPrice(tax)}원\n")
-                sb.append("${getLocalizedText("total")}: ${formatPrice(totalWithTax)}원\n\n")
+                sb.append("${getLocalizedText("total")}: ${formatPrice(calculatedTotalPrice)}${getCurrencySymbol()}\n\n")
                 
                 // 줄바꿈 명령
                 sb.append("줄바꿈, 2\n\n")

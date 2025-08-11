@@ -410,6 +410,7 @@ class _MyHomePageState extends State<MyHomePage> {
         businessNumber: '333-33-3333',
         thankYouMessage: 'Thank you for visiting!\nPlease come again soon.',
         language: 'eng', // 영어로 테스트
+        currency: 'USD', // 달러로 테스트
       );
       print(' [DEBUG] 네이티브 함수 호출 결과: $success');
       if (mounted) {

@@ -61,6 +61,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     String? businessNumber,
     String? thankYouMessage,
     String language = 'kor',
+    String currency = 'KRW',
   }) async {
     print('🔍 [DEBUG] MethodChannel: printOrderReceipt 호출 시작');
     print('🔍 [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
@@ -75,6 +76,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
         'businessNumber': businessNumber,
         'thankYouMessage': thankYouMessage,
         'language': language,
+        'currency': currency,
       });
       print('🔍 [DEBUG] MethodChannel: 성공 결과: $result');
       return result;
