@@ -336,6 +336,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// 구조화된 주문 영수증 출력
   Future<void> _printOrderReceipt() async {
+    print('🔍 [DEBUG] 구조화된 주문 영수증 출력 시작');
     try {
       // 샘플 주문 데이터 생성
       final sampleOrderData = OrderDetailResponse(
@@ -399,7 +400,10 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       );
 
+      print('🔍 [DEBUG] 네이티브 함수 호출 전: printOrderReceipt');
+      print('🔍 [DEBUG] 전달할 데이터: ${sampleOrderData.toJson()}');
       final success = await _blueberryPrinterPlugin.printOrderReceipt(sampleOrderData);
+      print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

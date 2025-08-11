@@ -24,27 +24,27 @@ object LogicReceiptProcessor {
                 val tableName = orderData["tableName"] as? String ?: "테이블 정보 없음"
                 val totalPrice = orderData["totalPrice"] as? Int ?: 0
                 
-                // 타이틀
-                sb.append("[타이틀]\n")
-                sb.append("영수증\n\n")
+                // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
+                sb.append("타이틀, 80\n")
+                sb.append("카페 블루베리\n\n")
                 
-                // 매장정보 (기본값)
-                sb.append("[매장정보]\n")
-                sb.append("블루베리 카페\n")
-                sb.append("서울시 강남구\n")
-                sb.append("TEL: 02-1234-5678\n\n")
+                // 매장정보 섹션
+                sb.append("매장정보, 20\n")
+                sb.append("서울특별시 강남구 테헤란로 123\n")
+                sb.append("전화: 02-1234-5678\n")
+                sb.append("사업자등록번호: 123-45-67890\n\n")
                 
-                // 구분선
-                sb.append("[구분선]\n")
-                sb.append("==================\n\n")
+                // 구분선 섹션
+                sb.append("구분선, 20\n")
+                sb.append("================================\n\n")
                 
-                // 주문 정보
-                sb.append("[매장정보]\n")
+                // 주문 정보 섹션
+                sb.append("주문정보, 20\n")
                 sb.append("주문번호: $orderNumber\n")
                 sb.append("테이블: $tableName\n\n")
                 
-                // 상품 목록
-                sb.append("[상품목록]\n")
+                // 상품 목록 섹션
+                sb.append("상품목록, 20\n")
                 val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
                 
                 for (version in orderVersions) {
@@ -74,25 +74,36 @@ object LogicReceiptProcessor {
                     }
                 }
                 
-                sb.append("\n")
                 
-                // 구분선
-                sb.append("[구분선]\n")
-                sb.append("==================\n\n")
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 2\n\n")
                 
-                // 합계
-                sb.append("[합계]\n")
-                sb.append("총 금액: ${formatPrice(totalPrice)}원\n\n")
+                // 합계 섹션
+                sb.append("합계, 20\n")
+                sb.append("소계: ${formatPrice(totalPrice)}원\n")
+                val tax = (totalPrice * 0.1).toInt()
+                val totalWithTax = totalPrice + tax
+                sb.append("부가세: ${formatPrice(tax)}원\n")
+                sb.append("합계: ${formatPrice(totalWithTax)}원\n\n")
                 
-                // 감사 메시지
-                sb.append("[감사메시지]\n")
-                sb.append("이용해 주셔서 감사합니다\n")
-                sb.append("또 방문해 주세요!\n")
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 2\n\n")
+                
+                // 감사 메시지 섹션
+                sb.append("감사메시지, 20\n")
+                sb.append("감사합니다!\n")
+                sb.append("다음에 또 방문해 주세요.\n\n")
+                
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 3\n\n")
+                
+                // 영수증 자르기 명령
+                sb.append("영수증 자르기")
                 
             } catch (e: Exception) {
                 Log.e(TAG, "주문 영수증 포맷팅 실패", e)
-                // 에러 시 기본 영수증 반환
-                return "[타이틀]\n영수증\n\n[감사메시지]\n이용해 주셔서 감사합니다\n"
+                // 에러 시 기본 영수증 반환 (커스텀 영수증과 동일한 포맷)
+                return "타이틀, 80\n카페 블루베리\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기"
             }
             
             return sb.toString()

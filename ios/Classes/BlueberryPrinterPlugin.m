@@ -260,27 +260,27 @@
         // 영수증 포맷 생성
         NSMutableString* receiptText = [[NSMutableString alloc] init];
         
-        // 타이틀
-        [receiptText appendString:@"[타이틀]\n"];
-        [receiptText appendString:@"영수증\n\n"];
+        // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
+        [receiptText appendString:@"타이틀, 80\n"];
+        [receiptText appendString:@"카페 블루베리\n\n"];
         
-        // 매장정보
-        [receiptText appendString:@"[매장정보]\n"];
-        [receiptText appendString:@"블루베리 카페\n"];
-        [receiptText appendString:@"서울시 강남구\n"];
-        [receiptText appendString:@"TEL: 02-1234-5678\n\n"];
+        // 매장정보 섹션
+        [receiptText appendString:@"매장정보, 20\n"];
+        [receiptText appendString:@"서울특별시 강남구 테헤란로 123\n"];
+        [receiptText appendString:@"전화: 02-1234-5678\n"];
+        [receiptText appendString:@"사업자등록번호: 123-45-67890\n\n"];
         
-        // 구분선
-        [receiptText appendString:@"[구분선]\n"];
-        [receiptText appendString:@"==================\n\n"];
+        // 구분선 섹션
+        [receiptText appendString:@"구분선, 20\n"];
+        [receiptText appendString:@"================================\n\n"];
         
-        // 주문 정보
-        [receiptText appendString:@"[매장정보]\n"];
+        // 주문 정보 섹션
+        [receiptText appendString:@"주문정보, 20\n"];
         [receiptText appendFormat:@"주문번호: %@\n", orderNumber];
         [receiptText appendFormat:@"테이블: %@\n\n", tableName];
         
-        // 상품 목록
-        [receiptText appendString:@"[상품목록]\n"];
+        // 상품 목록 섹션
+        [receiptText appendString:@"상품목록, 20\n"];
         
         NSArray* orderVersions = orderData[@"orderVersion"];
         if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
@@ -323,20 +323,31 @@
             }
         }
         
-        [receiptText appendString:@"\n"];
         
-        // 구분선
-        [receiptText appendString:@"[구분선]\n"];
-        [receiptText appendString:@"==================\n\n"];
+        // 줄바꿈 명령
+        [receiptText appendString:@"줄바꿈, 2\n\n"];
         
-        // 합계
-        [receiptText appendString:@"[합계]\n"];
-        [receiptText appendFormat:@"총 금액: %@원\n\n", [self formatPrice:totalPrice]];
+        // 합계 섹션
+        [receiptText appendString:@"합계, 20\n"];
+        [receiptText appendFormat:@"소계: %@원\n", [self formatPrice:totalPrice]];
+        NSInteger tax = (NSInteger)(totalPrice * 0.1);
+        NSInteger totalWithTax = totalPrice + tax;
+        [receiptText appendFormat:@"부가세: %@원\n", [self formatPrice:tax]];
+        [receiptText appendFormat:@"합계: %@원\n\n", [self formatPrice:totalWithTax]];
         
-        // 감사 메시지
-        [receiptText appendString:@"[감사메시지]\n"];
-        [receiptText appendString:@"이용해 주셔서 감사합니다\n"];
-        [receiptText appendString:@"또 방문해 주세요!\n"];
+        // 줄바꿈 명령
+        [receiptText appendString:@"줄바꿈, 2\n\n"];
+        
+        // 감사 메시지 섹션
+        [receiptText appendString:@"감사메시지, 20\n"];
+        [receiptText appendString:@"감사합니다!\n"];
+        [receiptText appendString:@"다음에 또 방문해 주세요.\n\n"];
+        
+        // 줄바꿈 명령
+        [receiptText appendString:@"줄바꿈, 3\n\n"];
+        
+        // 영수증 자르기 명령
+        [receiptText appendString:@"영수증 자르기"];
         
         NSLog(@"🔍 [DEBUG] 영수증 포맷팅 완료");
         
@@ -346,7 +357,7 @@
     } @catch (NSException *exception) {
         NSLog(@"🔍 [DEBUG] 구조화된 영수증 처리 오류: %@", exception.reason);
         // 에러 시 기본 영수증 출력
-        NSString* fallbackText = @"[타이틀]\n영수증\n\n[감사메시지]\n이용해 주셔서 감사합니다\n";
+        NSString* fallbackText = @"타이틀, 80\n카페 블루베리\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기";
         [self printReceipt:fallbackText result:result];
     }
 }
