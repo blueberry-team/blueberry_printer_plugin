@@ -1,6 +1,7 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'blueberry_printer_method_channel.dart';
+import 'models/order_detail_response.dart';
 
 abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// Constructs a BlueberryPrinterPlatform.
@@ -45,5 +46,10 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
 
   Future<bool> disconnect() {
     throw UnimplementedError('disconnect() has not been implemented.');
+  }
+
+  /// 구조화된 주문 데이터로 영수증 출력
+  Future<bool> printOrderReceipt(OrderDetailResponse orderData) {
+    throw UnimplementedError('printOrderReceipt() has not been implemented.');
   }
 }

@@ -9,10 +9,101 @@ import com.example.blueberry_printer.logic.RenderKoreanTextToImage
 import com.example.blueberry_printer.data.DataSampleReceipts
 import com.example.blueberry_printer.hardware.HardwarePrinterCommands
 
-class LogicReceiptProcessor {
-    
-    companion object {
+object LogicReceiptProcessor {
         private const val TAG = "LogicReceiptProcessor"
+        
+        /**
+         * 주문 데이터를 영수증 포맷으로 변환
+         */
+        fun formatOrderReceipt(orderData: Map<String, Any>): String {
+            val sb = StringBuilder()
+            
+            try {
+                // 주문 기본 정보
+                val orderNumber = orderData["orderNumber"] as? String ?: "주문번호 없음"
+                val tableName = orderData["tableName"] as? String ?: "테이블 정보 없음"
+                val totalPrice = orderData["totalPrice"] as? Int ?: 0
+                
+                // 타이틀
+                sb.append("[타이틀]\n")
+                sb.append("영수증\n\n")
+                
+                // 매장정보 (기본값)
+                sb.append("[매장정보]\n")
+                sb.append("블루베리 카페\n")
+                sb.append("서울시 강남구\n")
+                sb.append("TEL: 02-1234-5678\n\n")
+                
+                // 구분선
+                sb.append("[구분선]\n")
+                sb.append("==================\n\n")
+                
+                // 주문 정보
+                sb.append("[매장정보]\n")
+                sb.append("주문번호: $orderNumber\n")
+                sb.append("테이블: $tableName\n\n")
+                
+                // 상품 목록
+                sb.append("[상품목록]\n")
+                val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
+                
+                for (version in orderVersions) {
+                    val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
+                    
+                    for (item in orderItems) {
+                        val menuName = item["menuName"] as? String ?: "상품명 없음"
+                        val quantity = item["quantity"] as? Int ?: 0
+                        val price = item["price"] as? Int ?: 0
+                        
+                        sb.append("$menuName x$quantity = ${formatPrice(price)}원\n")
+                        
+                        // 옵션 처리
+                        val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
+                        for (option in options) {
+                            val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
+                            for (selectedItem in selectedItems) {
+                                val itemName = selectedItem["itemName"] as? String ?: "옵션명 없음"
+                                val itemPrice = selectedItem["itemPrice"] as? Int ?: 0
+                                val itemQuantity = selectedItem["quantity"] as? Int ?: 0
+                                
+                                if (itemPrice > 0) {
+                                    sb.append("  + $itemName x$itemQuantity = ${formatPrice(itemPrice)}원\n")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                sb.append("\n")
+                
+                // 구분선
+                sb.append("[구분선]\n")
+                sb.append("==================\n\n")
+                
+                // 합계
+                sb.append("[합계]\n")
+                sb.append("총 금액: ${formatPrice(totalPrice)}원\n\n")
+                
+                // 감사 메시지
+                sb.append("[감사메시지]\n")
+                sb.append("이용해 주셔서 감사합니다\n")
+                sb.append("또 방문해 주세요!\n")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "주문 영수증 포맷팅 실패", e)
+                // 에러 시 기본 영수증 반환
+                return "[타이틀]\n영수증\n\n[감사메시지]\n이용해 주셔서 감사합니다\n"
+            }
+            
+            return sb.toString()
+        }
+        
+        /**
+         * 가격 포맷팅 (천단위 콤마)
+         */
+        private fun formatPrice(price: Int): String {
+            return String.format("%,d", price)
+        }
         
         // 프린터 초기화
         fun initialize(outputStream: OutputStream) {
@@ -256,5 +347,3 @@ class LogicReceiptProcessor {
                 throw e
             }
         }
-    }
-} 

@@ -135,6 +135,29 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
           result.error("PRINT_FAIL", "샘플 영수증 출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
+      "printOrderReceipt" -> {
+        val orderData = call.argument<Map<String, Any>>("orderData")
+        if (orderData == null) {
+          result.error("NO_DATA", "주문 데이터가 필요합니다", null)
+          return
+        }
+        
+        val stream = outputStream
+        if (stream == null) {
+          result.error("NOT_CONNECTED", "프린터가 연결되지 않았습니다", null)
+          return
+        }
+        
+        try {
+          Log.d("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 시작")
+          val formattedReceipt = LogicReceiptProcessor.formatOrderReceipt(orderData)
+          LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)
+          result.success(true)
+        } catch (e: Exception) {
+          Log.e("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 실패", e)
+          result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
+        }
+      }
       "disconnect" -> {
         try {
           currentSocket?.close()

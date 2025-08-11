@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:blueberry_printer/blueberry_printer.dart';
+import 'package:blueberry_printer/models/order_detail_response.dart';
 import 'sample_receipts.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -312,17 +313,109 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _printCustomReceipt() async {
     try {
       final success = await _blueberryPrinterPlugin.printReceipt(SampleReceipts.customReceipt);
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('커스텀 영수증이 출력되었습니다')),
-          );
-        }
-      }
-    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('출력 실패: $e')),
+          SnackBar(
+            content: Text(success ? '커스텀 영수증 출력이 완료되었습니다' : '커스텀 영수증 출력에 실패했습니다'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('커스텀 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('커스텀 영수증 출력 실패'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 구조화된 주문 영수증 출력
+  Future<void> _printOrderReceipt() async {
+    try {
+      // 샘플 주문 데이터 생성
+      final sampleOrderData = OrderDetailResponse(
+        orderId: 'ORDER_001',
+        orderNumber: 'ORD-2024-001',
+        tableNumber: 5,
+        tableName: '테이블 5',
+        totalPrice: 22500,
+        orderVersion: [
+          OrderVersionResponse(
+            versionId: 'V001',
+            orderBy: 'TABLE',
+            versionNumber: 1,
+            createdAt: '2024-08-11 23:30:00',
+            orderItems: [
+              OrderDetailItemResponse(
+                menuId: 'MENU_001',
+                menuName: '아메리카노 (ICE)',
+                quantity: 2,
+                price: 9000, // 4500 * 2
+                options: [
+                  MenuOptionResponse(
+                    optionMenuItemId: 'OPT_001',
+                    optionMenuItemName: '시럽 추가',
+                    isRequired: false,
+                    isMultiple: true,
+                    selectedItems: [
+                      SelectedOptionItemResponse(
+                        menuOptionItemId: 'ITEM_001',
+                        itemName: '바닐라 시럽',
+                        itemPrice: 500,
+                        quantity: 1,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              OrderDetailItemResponse(
+                menuId: 'MENU_002',
+                menuName: '카페라떼 (HOT)',
+                quantity: 1,
+                price: 5000,
+                options: [],
+              ),
+              OrderDetailItemResponse(
+                menuId: 'MENU_003',
+                menuName: '블루베리 머핀',
+                quantity: 2,
+                price: 7000, // 3500 * 2
+                options: [],
+              ),
+              OrderDetailItemResponse(
+                menuId: 'MENU_004',
+                menuName: '에스프레소 이중샷',
+                quantity: 1,
+                price: 1000,
+                options: [],
+              ),
+            ],
+          ),
+        ],
+      );
+
+      final success = await _blueberryPrinterPlugin.printOrderReceipt(sampleOrderData);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '구조화된 주문 영수증 출력이 완료되었습니다' : '구조화된 주문 영수증 출력에 실패했습니다'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('구조화된 주문 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('구조화된 주문 영수증 출력 실패'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -442,27 +535,44 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                      Row(
+                      Column(
                         children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _printSampleReceipt,
-                              icon: const Icon(Icons.receipt),
-                              label: const Text('샘플 영수증'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _printSampleReceipt,
+                                  icon: const Icon(Icons.receipt),
+                                  label: const Text('샘플 영수증'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
                               ),
-                            ),
+                              SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _printCustomReceipt,
+                                  icon: const Icon(Icons.print),
+                                  label: const Text('커스텀 영수증'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                          Expanded(
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                          SizedBox(
+                            width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _printCustomReceipt,
-                              icon: const Icon(Icons.print),
-                              label: const Text('커스텀 영수증'),
+                              onPressed: _printOrderReceipt,
+                              icon: const Icon(Icons.receipt_long),
+                              label: const Text('구조화된 주문 영수증'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
+                                backgroundColor: Colors.purple,
                                 foregroundColor: Colors.white,
                               ),
                             ),

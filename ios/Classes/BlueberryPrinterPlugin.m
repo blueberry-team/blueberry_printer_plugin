@@ -73,11 +73,23 @@
     else if ([@"printSampleReceipt" isEqualToString:call.method]) {
         [self printSampleReceipt:result];
     }
+    else if ([@"printOrderReceipt" isEqualToString:call.method]) {
+        NSDictionary* args = call.arguments;
+        NSDictionary* orderData = args[@"orderData"];
+        if (!orderData) {
+            NSLog(@" [DEBUG] 출력 실패: 주문 데이터 없음");
+            result([FlutterError errorWithCode:@"NO_DATA" 
+                                     message:@"주문 데이터가 필요합니다" 
+                                     details:nil]);
+            return;
+        }
+        [self printOrderReceipt:orderData result:result];
+    }
     else if ([@"disconnect" isEqualToString:call.method]) {
         [self disconnect:result];
     }
     else {
-        NSLog(@"🔍 [DEBUG] 구현되지 않은 메서드: %@", call.method);
+        NSLog(@" [DEBUG] 구현되지 않은 메서드: %@", call.method);
         result(FlutterMethodNotImplemented);
     }
 }
@@ -233,6 +245,120 @@
     
     // printReceipt 함수 재사용
     [self printReceipt:sampleText result:result];
+}
+
+- (void)printOrderReceipt:(NSDictionary*)orderData result:(FlutterResult)result {
+    NSLog(@"🔍 [DEBUG] 구조화된 주문 영수증 출력 시도");
+    
+    @try {
+        // 주문 기본 정보 추출
+        NSString* orderNumber = orderData[@"orderNumber"] ?: @"주문번호 없음";
+        NSString* tableName = orderData[@"tableName"] ?: @"테이블 정보 없음";
+        NSNumber* totalPriceNum = orderData[@"totalPrice"];
+        NSInteger totalPrice = totalPriceNum ? [totalPriceNum integerValue] : 0;
+        
+        // 영수증 포맷 생성
+        NSMutableString* receiptText = [[NSMutableString alloc] init];
+        
+        // 타이틀
+        [receiptText appendString:@"[타이틀]\n"];
+        [receiptText appendString:@"영수증\n\n"];
+        
+        // 매장정보
+        [receiptText appendString:@"[매장정보]\n"];
+        [receiptText appendString:@"블루베리 카페\n"];
+        [receiptText appendString:@"서울시 강남구\n"];
+        [receiptText appendString:@"TEL: 02-1234-5678\n\n"];
+        
+        // 구분선
+        [receiptText appendString:@"[구분선]\n"];
+        [receiptText appendString:@"==================\n\n"];
+        
+        // 주문 정보
+        [receiptText appendString:@"[매장정보]\n"];
+        [receiptText appendFormat:@"주문번호: %@\n", orderNumber];
+        [receiptText appendFormat:@"테이블: %@\n\n", tableName];
+        
+        // 상품 목록
+        [receiptText appendString:@"[상품목록]\n"];
+        
+        NSArray* orderVersions = orderData[@"orderVersion"];
+        if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
+            for (NSDictionary* version in orderVersions) {
+                NSArray* orderItems = version[@"orderItems"];
+                if (orderItems && [orderItems isKindOfClass:[NSArray class]]) {
+                    for (NSDictionary* item in orderItems) {
+                        NSString* menuName = item[@"menuName"] ?: @"상품명 없음";
+                        NSNumber* quantityNum = item[@"quantity"];
+                        NSNumber* priceNum = item[@"price"];
+                        NSInteger quantity = quantityNum ? [quantityNum integerValue] : 0;
+                        NSInteger price = priceNum ? [priceNum integerValue] : 0;
+                        
+                        [receiptText appendFormat:@"%@ x%ld = %@원\n", 
+                         menuName, (long)quantity, [self formatPrice:price]];
+                        
+                        // 옵션 처리
+                        NSArray* options = item[@"options"];
+                        if (options && [options isKindOfClass:[NSArray class]]) {
+                            for (NSDictionary* option in options) {
+                                NSArray* selectedItems = option[@"selectedItems"];
+                                if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
+                                    for (NSDictionary* selectedItem in selectedItems) {
+                                        NSString* itemName = selectedItem[@"itemName"] ?: @"옵션명 없음";
+                                        NSNumber* itemPriceNum = selectedItem[@"itemPrice"];
+                                        NSNumber* itemQuantityNum = selectedItem[@"quantity"];
+                                        NSInteger itemPrice = itemPriceNum ? [itemPriceNum integerValue] : 0;
+                                        NSInteger itemQuantity = itemQuantityNum ? [itemQuantityNum integerValue] : 0;
+                                        
+                                        if (itemPrice > 0) {
+                                            [receiptText appendFormat:@"  + %@ x%ld = %@원\n", 
+                                             itemName, (long)itemQuantity, [self formatPrice:itemPrice]];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        [receiptText appendString:@"\n"];
+        
+        // 구분선
+        [receiptText appendString:@"[구분선]\n"];
+        [receiptText appendString:@"==================\n\n"];
+        
+        // 합계
+        [receiptText appendString:@"[합계]\n"];
+        [receiptText appendFormat:@"총 금액: %@원\n\n", [self formatPrice:totalPrice]];
+        
+        // 감사 메시지
+        [receiptText appendString:@"[감사메시지]\n"];
+        [receiptText appendString:@"이용해 주셔서 감사합니다\n"];
+        [receiptText appendString:@"또 방문해 주세요!\n"];
+        
+        NSLog(@"🔍 [DEBUG] 영수증 포맷팅 완료");
+        
+        // 기존 printReceipt 메서드 재사용
+        [self printReceipt:receiptText result:result];
+        
+    } @catch (NSException *exception) {
+        NSLog(@"🔍 [DEBUG] 구조화된 영수증 처리 오류: %@", exception.reason);
+        // 에러 시 기본 영수증 출력
+        NSString* fallbackText = @"[타이틀]\n영수증\n\n[감사메시지]\n이용해 주셔서 감사합니다\n";
+        [self printReceipt:fallbackText result:result];
+    }
+}
+
+/**
+ * 가격 포맷팅 (천단위 콤마)
+ */
+- (NSString*)formatPrice:(NSInteger)price {
+    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+    [formatter setNumberStyle:NSNumberFormatterDecimalStyle];
+    [formatter setGroupingSeparator:@","];
+    return [formatter stringFromNumber:@(price)];
 }
 
 - (void)disconnect:(FlutterResult)result {

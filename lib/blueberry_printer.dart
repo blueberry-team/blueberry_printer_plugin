@@ -6,6 +6,7 @@
 // https://flutter.dev/to/pubspec-plugin-platforms.
 
 import 'blueberry_printer_platform_interface.dart';
+import 'models/order_detail_response.dart';
 
 class BlueberryPrinter {
   Future<String?> getPlatformVersion() {
@@ -30,5 +31,10 @@ class BlueberryPrinter {
 
   Future<bool> disconnect() {
     return BlueberryPrinterPlatform.instance.disconnect();
+  }
+
+  /// 구조화된 주문 데이터로 영수증 출력
+  Future<bool> printOrderReceipt(OrderDetailResponse orderData) {
+    return BlueberryPrinterPlatform.instance.printOrderReceipt(orderData);
   }
 }

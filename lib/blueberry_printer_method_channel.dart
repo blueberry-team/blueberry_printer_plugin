@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'blueberry_printer_platform_interface.dart';
+import 'models/order_detail_response.dart';
 
 /// An implementation of [BlueberryPrinterPlatform] that uses method channels.
 class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
@@ -48,6 +49,14 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   @override
   Future<bool> disconnect() async {
     final bool result = await methodChannel.invokeMethod('disconnect');
+    return result;
+  }
+
+  @override
+  Future<bool> printOrderReceipt(OrderDetailResponse orderData) async {
+    final bool result = await methodChannel.invokeMethod('printOrderReceipt', {
+      'orderData': orderData.toJson(),
+    });
     return result;
   }
 }
