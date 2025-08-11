@@ -95,4 +95,49 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
       rethrow;
     }
   }
+
+  @override
+  Future<bool> printCumulativeOrderReceipt(
+    OrderDetailResponse orderData, {
+    required String storeName,
+    String? storeAddress,
+    String? phoneNumber,
+    String? businessNumber,
+    String? thankYouMessage,
+    String language = 'kor',
+    String currency = 'KRW',
+  }) async {
+    print(' [DEBUG] MethodChannel: printCumulativeOrderReceipt 호출 시작');
+    print(' [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
+    print(' [DEBUG] MethodChannel: 매장명: $storeName');
+    print(' [DEBUG] MethodChannel: 주문 버전 수: ${orderData.orderVersion.length}');
+  
+    // 파라미터의 쉬표를 일본 쉬표로 변경하여 파싱 오류 방지
+    String sanitizedStoreName = storeName.replaceAll(',', '、');
+    String? sanitizedStoreAddress = storeAddress?.replaceAll(',', '、');
+    String? sanitizedPhoneNumber = phoneNumber?.replaceAll(',', '、');
+    String? sanitizedBusinessNumber = businessNumber?.replaceAll(',', '、');
+    String? sanitizedThankYouMessage = thankYouMessage?.replaceAll(',', '、');
+  
+    print(' [DEBUG] MethodChannel: 쉬표 제거 후 - 매장명: $sanitizedStoreName');
+    print(' [DEBUG] MethodChannel: 쉬표 제거 후 - 주소: $sanitizedStoreAddress');
+  
+    try {
+      final bool result = await methodChannel.invokeMethod('printCumulativeOrderReceipt', {
+        'orderData': orderData.toJson(),
+        'storeName': sanitizedStoreName,
+        'storeAddress': sanitizedStoreAddress,
+        'phoneNumber': sanitizedPhoneNumber,
+        'businessNumber': sanitizedBusinessNumber,
+        'thankYouMessage': sanitizedThankYouMessage,
+        'language': language,
+        'currency': currency,
+      });
+      print(' [DEBUG] MethodChannel: 성공 결과: $result');
+      return result;
+    } catch (e) {
+      print(' [DEBUG] MethodChannel: 오류 발생: $e');
+      rethrow;
+    }
+  }
 }

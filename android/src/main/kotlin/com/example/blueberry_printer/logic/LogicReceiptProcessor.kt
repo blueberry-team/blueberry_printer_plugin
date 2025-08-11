@@ -219,6 +219,243 @@ object LogicReceiptProcessor {
         }
         
         /**
+         * 누적 주문 데이터를 영수증 포맷으로 변환 (모든 주문 버전 포함)
+         * @param orderData 주문 데이터 (모든 버전 포함)
+         * @param storeName 매장명
+         * @param storeAddress 매장 주소 (선택사항)
+         * @param phoneNumber 전화번호 (선택사항)
+         * @param businessNumber 사업자등록번호 (선택사항)
+         * @param thankYouMessage 감사 메시지 (선택사항)
+         */
+        fun formatCumulativeOrderReceipt(
+            orderData: Map<String, Any>,
+            storeName: String,
+            storeAddress: String? = null,
+            phoneNumber: String? = null,
+            businessNumber: String? = null,
+            thankYouMessage: String? = null,
+            language: String = "kor",
+            currency: String = "KRW"
+        ): String {
+            val sb = StringBuilder()
+            
+            // 다국어 텍스트 헬퍼 함수
+            fun getLocalizedText(key: String): String {
+                return when (language) {
+                    "eng" -> when (key) {
+                        "store_info" -> "Store Information"
+                        "order_info" -> "Order Information"
+                        "order_number" -> "Order No"
+                        "table" -> "Table"
+                        "menu_list" -> "Menu List"
+                        "version" -> "Version"
+                        "order_time" -> "Order Time"
+                        "total" -> "Total"
+                        "grand_total" -> "Grand Total"
+                        "thank_you_default" -> "Thank you!\nPlease visit us again."
+                        "phone" -> "Phone"
+                        "business_number" -> "Business No"
+                        "no_order_number" -> "No order number"
+                        "no_table_info" -> "No table info"
+                        else -> key
+                    }
+                    "jpn" -> when (key) {
+                        "store_info" -> "店舗情報"
+                        "order_info" -> "注文情報"
+                        "order_number" -> "注文番号"
+                        "table" -> "テーブル"
+                        "menu_list" -> "メニューリスト"
+                        "version" -> "バージョン"
+                        "order_time" -> "注文時刻"
+                        "total" -> "合計"
+                        "grand_total" -> "総合計"
+                        "thank_you_default" -> "ありがとうございます！\nまたお越しください。"
+                        "phone" -> "電話"
+                        "business_number" -> "事業者番号"
+                        "no_order_number" -> "注文番号なし"
+                        "no_table_info" -> "テーブル情報なし"
+                        else -> key
+                    }
+                    else -> when (key) { // "kor" (기본값)
+                        "store_info" -> "매장정보"
+                        "order_info" -> "주문정보"
+                        "order_number" -> "주문번호"
+                        "table" -> "테이블"
+                        "menu_list" -> "상품목록"
+                        "version" -> "버전"
+                        "order_time" -> "주문시간"
+                        "total" -> "합계"
+                        "grand_total" -> "총 합계"
+                        "thank_you_default" -> "감사합니다!\n다음에 또 방문해 주세요."
+                        "phone" -> "전화"
+                        "business_number" -> "사업자등록번호"
+                        "no_order_number" -> "주문번호 없음"
+                        "no_table_info" -> "테이블 정보 없음"
+                        else -> key
+                    }
+                }
+            }
+            
+            // 화폐 단위 헬퍼 함수
+            fun getCurrencySymbol(): String {
+                return when (currency) {
+                    "USD" -> "$"
+                    "JPY" -> "¥"
+                    "EUR" -> "€"
+                    else -> "원" // KRW 기본값
+                }
+            }
+            
+            try {
+                // 주문 기본 정보
+                val orderNumber = orderData["orderNumber"] as? String ?: getLocalizedText("no_order_number")
+                val tableName = orderData["tableName"] as? String ?: getLocalizedText("no_table_info")
+                
+                // 모든 버전의 주문 데이터에서 총 금액 자동 계산
+                var grandTotalPrice = 0
+                val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
+                
+                Log.d(TAG, "누적 주문 처리 시작 - 버전 수: ${orderVersions.size}")
+                
+                // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
+                sb.append("타이틀, 80\n")
+                sb.append("$storeName\n\n")
+                
+                // 매장정보 섹션
+                sb.append("${getLocalizedText("store_info")}, 20\n")
+                if (storeAddress != null) {
+                    sb.append("$storeAddress\n")
+                }
+                if (phoneNumber != null) {
+                    sb.append("${getLocalizedText("phone")}: $phoneNumber\n")
+                }
+                if (businessNumber != null) {
+                    sb.append("${getLocalizedText("business_number")}: $businessNumber\n")
+                }
+                sb.append("\n")
+                
+                // 구분선 섹션
+                sb.append("구분선, 20\n")
+                sb.append("================================\n\n")
+                
+                // 주문 정보 섹션
+                sb.append("${getLocalizedText("order_info")}, 20\n")
+                sb.append("${getLocalizedText("order_number")}: $orderNumber\n")
+                sb.append("${getLocalizedText("table")}: $tableName\n\n")
+                
+                // 누적 상품 목록 섹션 (모든 버전 합치기)
+                sb.append("${getLocalizedText("menu_list")}, 20\n")
+                
+                // 모든 버전의 상품을 합치기 위한 Map
+                val mergedItems = mutableMapOf<String, MutableMap<String, Any>>()
+                
+                // 모든 버전의 상품 수집
+                for (version in orderVersions) {
+                    val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
+                    
+                    for (item in orderItems) {
+                        val menuName = item["menuName"] as? String ?: "상품명 없음"
+                        val quantity = item["quantity"] as? Int ?: 0
+                        val price = item["price"] as? Int ?: 0
+                        
+                        // 메뉴 아이템 합치기
+                        if (mergedItems.containsKey(menuName)) {
+                            val existingItem = mergedItems[menuName]!!
+                            existingItem["quantity"] = (existingItem["quantity"] as Int) + quantity
+                            existingItem["totalPrice"] = (existingItem["totalPrice"] as Int) + (price * quantity)
+                        } else {
+                            mergedItems[menuName] = mutableMapOf(
+                                "quantity" to quantity,
+                                "unitPrice" to price,
+                                "totalPrice" to (price * quantity),
+                                "options" to mutableMapOf<String, MutableMap<String, Any>>()
+                            )
+                        }
+                        
+                        // 옵션 처리 및 합치기
+                        val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
+                        val mergedOptions = mergedItems[menuName]!!["options"] as MutableMap<String, MutableMap<String, Any>>
+                        
+                        for (option in options) {
+                            val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
+                            for (selectedItem in selectedItems) {
+                                val optionName = selectedItem["itemName"] as? String ?: "옵션명 없음"
+                                val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
+                                val optionQuantity = selectedItem["quantity"] as? Int ?: 0
+                                
+                                if (optionPrice > 0) {
+                                    if (mergedOptions.containsKey(optionName)) {
+                                        val existingOption = mergedOptions[optionName]!!
+                                        existingOption["quantity"] = (existingOption["quantity"] as Int) + optionQuantity
+                                        existingOption["totalPrice"] = (existingOption["totalPrice"] as Int) + (optionPrice * optionQuantity)
+                                    } else {
+                                        mergedOptions[optionName] = mutableMapOf(
+                                            "quantity" to optionQuantity,
+                                            "unitPrice" to optionPrice,
+                                            "totalPrice" to (optionPrice * optionQuantity)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 합쳐진 상품 출력
+                for ((menuName, itemData) in mergedItems) {
+                    val quantity = itemData["quantity"] as Int
+                    val totalPrice = itemData["totalPrice"] as Int
+                    grandTotalPrice += totalPrice
+                    
+                    sb.append("$menuName x$quantity = ${formatPrice(totalPrice)}${getCurrencySymbol()}\n")
+                    
+                    // 합쳐진 옵션 출력
+                    val options = itemData["options"] as Map<String, Map<String, Any>>
+                    for ((optionName, optionData) in options) {
+                        val optionQuantity = optionData["quantity"] as Int
+                        val optionTotalPrice = optionData["totalPrice"] as Int
+                        grandTotalPrice += optionTotalPrice
+                        
+                        sb.append("  + $optionName x$optionQuantity = ${formatPrice(optionTotalPrice)}${getCurrencySymbol()}\n")
+                    }
+                }
+                
+                Log.d(TAG, "계산된 총 금액: $grandTotalPrice")
+                
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 2\n\n")
+                
+                // 총 합계 섹션
+                sb.append("${getLocalizedText("grand_total")}, 20\n")
+                sb.append("${getLocalizedText("grand_total")}: ${formatPrice(grandTotalPrice)}${getCurrencySymbol()}\n\n")
+                
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 2\n\n")
+                
+                // 감사 메시지 섹션
+                sb.append("감사메시지, 20\n")
+                if (thankYouMessage != null) {
+                    sb.append("$thankYouMessage\n\n")
+                } else {
+                    sb.append("${getLocalizedText("thank_you_default")}\n\n")
+                }
+                
+                // 줄바꿈 명령
+                sb.append("줄바꿈, 3\n\n")
+                
+                // 영수증 자르기 명령
+                sb.append("영수증 자르기")
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "누적 주문 영수증 포맷팅 실패", e)
+                // 에러 시 기본 영수증 반환 (커스텀 영수증과 동일한 포맷)
+                return "타이틀, 80\n$storeName\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기"
+            }
+            
+            return sb.toString()
+        }
+        
+        /**
          * 가격 포맷팅 (천단위 콤마)
          */
         private fun formatPrice(price: Int): String {

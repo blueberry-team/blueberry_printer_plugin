@@ -434,6 +434,168 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// 누적 주문 영수증 출력 (모든 주문 버전 포함)
+  Future<void> _printCumulativeOrderReceipt() async {
+    try {
+      print('🔍 [DEBUG] 누적 주문 영수증 출력 시작');
+      
+      // 샘플 데이터에서 누적 주문 데이터 생성 (여러 버전 포함)
+      final cumulativeOrderData = OrderDetailResponse(
+        orderId: 'ORDER_001',
+        orderNumber: 'ORD-2024-001',
+        tableNumber: 5,
+        tableName: '테이블 5번',
+        totalPrice: 45000, // 누적 총 금액
+        orderVersion: [
+          // 버전 1: 초기 주문
+          OrderVersionResponse(
+            versionId: 'V1',
+            orderBy: '고객1',
+            versionNumber: 1,
+            createdAt: '2024-01-15 12:00:00',
+            orderItems: [
+              OrderDetailItemResponse(
+                menuId: 'MENU_001',
+                menuName: '아메리카노',
+                quantity: 2,
+                price: 4500,
+                options: [
+                  MenuOptionResponse(
+                    optionMenuItemId: 'OPT_001',
+                    optionMenuItemName: '사이즈',
+                    isRequired: true,
+                    isMultiple: false,
+                    selectedItems: [
+                      SelectedOptionItemResponse(
+                        menuOptionItemId: 'SIZE_L',
+                        itemName: '라지',
+                        itemPrice: 500,
+                        quantity: 2,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              OrderDetailItemResponse(
+                menuId: 'MENU_002',
+                menuName: '카페라떼',
+                quantity: 1,
+                price: 5000,
+                options: [],
+              ),
+            ],
+          ),
+          // 버전 2: 추가 주문
+          OrderVersionResponse(
+            versionId: 'V2',
+            orderBy: '고객2',
+            versionNumber: 2,
+            createdAt: '2024-01-15 12:15:00',
+            orderItems: [
+              OrderDetailItemResponse(
+                menuId: 'MENU_003',
+                menuName: '단호박 케이크',
+                quantity: 1,
+                price: 6500,
+                options: [],
+              ),
+              OrderDetailItemResponse(
+                menuId: 'MENU_004',
+                menuName: '아이스 티',
+                quantity: 3,
+                price: 3000,
+                options: [
+                  MenuOptionResponse(
+                    optionMenuItemId: 'OPT_002',
+                    optionMenuItemName: '시럽',
+                    isRequired: false,
+                    isMultiple: true,
+                    selectedItems: [
+                      SelectedOptionItemResponse(
+                        menuOptionItemId: 'SYRUP_VANILLA',
+                        itemName: '바닐라 시럽',
+                        itemPrice: 500,
+                        quantity: 2,
+                      ),
+                      SelectedOptionItemResponse(
+                        menuOptionItemId: 'SYRUP_CARAMEL',
+                        itemName: '카라멜 시럽',
+                        itemPrice: 500,
+                        quantity: 1,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // 버전 3: 추가 주문 2
+          OrderVersionResponse(
+            versionId: 'V3',
+            orderBy: '고객1',
+            versionNumber: 3,
+            createdAt: '2024-01-15 12:30:00',
+            orderItems: [
+              OrderDetailItemResponse(
+                menuId: 'MENU_005',
+                menuName: '크로와상',
+                quantity: 2,
+                price: 4000,
+                options: [],
+              ),
+            ],
+          ),
+        ],
+      );
+      
+      print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 버전 수: ${cumulativeOrderData.orderVersion.length}');
+      
+      // 누적 주문 영수증 출력
+      bool success = await _blueberryPrinterPlugin.printCumulativeOrderReceipt(
+        cumulativeOrderData,
+        storeName: '카페 블루베리',
+        storeAddress: '서울특별시 강남구 테헤란로 123',
+        phoneNumber: '02-1234-5678',
+        businessNumber: '123-45-67890',
+        thankYouMessage: '누적 주문에 감사드립니다!\n다음에도 많은 이용 부탁드립니다.',
+        language: 'kor',
+        currency: 'KRW',
+      );
+      
+      if (success) {
+        print('🔍 [DEBUG] 누적 주문 영수증 출력 성공');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('누적 주문 영수증 출력 성공!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        print('🔍 [DEBUG] 누적 주문 영수증 출력 실패');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('누적 주문 영수증 출력 실패'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('🔍 [DEBUG] 누적 주문 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('누적 주문 영수증 출력 오류: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -586,6 +748,19 @@ class _MyHomePageState extends State<MyHomePage> {
                               label: const Text('구조화된 주문 영수증'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.purple,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _printCumulativeOrderReceipt,
+                              icon: const Icon(Icons.layers),
+                              label: const Text('누적 주문 영수증 (모든 버전)'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange,
                                 foregroundColor: Colors.white,
                               ),
                             ),

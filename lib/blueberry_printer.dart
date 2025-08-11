@@ -61,4 +61,33 @@ class BlueberryPrinter {
       currency: currency,
     );
   }
+
+  /// 누적 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
+  /// [orderData] 주문 데이터 (모든 버전 포함)
+  /// [storeName] 매장명
+  /// [storeAddress] 매장 주소 (선택사항)
+  /// [phoneNumber] 전화번호 (선택사항)
+  /// [businessNumber] 사업자등록번호 (선택사항)
+  /// [thankYouMessage] 감사 메시지 (선택사항)
+  Future<bool> printCumulativeOrderReceipt(
+    OrderDetailResponse orderData, {
+    required String storeName,
+    String? storeAddress,
+    String? phoneNumber,
+    String? businessNumber,
+    String? thankYouMessage,
+    String language = 'kor', // kor, eng, jpn
+    String currency = 'KRW', // KRW, USD, JPY, etc.
+  }) {
+    return BlueberryPrinterPlatform.instance.printCumulativeOrderReceipt(
+      orderData,
+      storeName: storeName,
+      storeAddress: storeAddress,
+      phoneNumber: phoneNumber,
+      businessNumber: businessNumber,
+      thankYouMessage: thankYouMessage,
+      language: language,
+      currency: currency,
+    );
+  }
 }
