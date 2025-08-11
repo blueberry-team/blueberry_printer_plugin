@@ -77,6 +77,7 @@
         NSDictionary* args = call.arguments;
         NSDictionary* orderData = args[@"orderData"];
         NSString* storeName = args[@"storeName"];
+        NSString* language = args[@"language"] ?: @"kor";
         if (!orderData || !storeName) {
             NSLog(@"🔍 [DEBUG] 출력 실패: 주문 데이터 또는 매장명 없음");
             result([FlutterError errorWithCode:@"NO_DATA" 
@@ -259,9 +260,59 @@
     // 인자에서 데이터 추출 (에러 처리에서도 사용하기 위해 @try 밖에 선언)
     NSDictionary* orderData = arguments[@"orderData"];
     NSString* storeName = arguments[@"storeName"] ?: @"매장명 없음";
+    NSString* language = arguments[@"language"] ?: @"kor";
     
-    printf("🔍 [DEBUG] iOS 매장명: %s\n", [storeName UTF8String]);
+    NSLog(@"🔍 [DEBUG] iOS 매장명: %@, 언어: %@", storeName, language);
+    printf("🔍 [DEBUG] iOS 매장명: %s, 언어: %s\n", [storeName UTF8String], [language UTF8String]);
     fflush(stdout);
+    
+    // 다국어 텍스트 헬퍼 함수
+    NSString* (^getLocalizedText)(NSString*) = ^NSString*(NSString* key) {
+        if ([language isEqualToString:@"eng"]) {
+            if ([key isEqualToString:@"store_info"]) return @"Store Information";
+            if ([key isEqualToString:@"order_info"]) return @"Order Information";
+            if ([key isEqualToString:@"order_number"]) return @"Order No";
+            if ([key isEqualToString:@"table"]) return @"Table";
+            if ([key isEqualToString:@"menu_list"]) return @"Menu List";
+            if ([key isEqualToString:@"subtotal"]) return @"Subtotal";
+            if ([key isEqualToString:@"tax"]) return @"Tax";
+            if ([key isEqualToString:@"total"]) return @"Total";
+            if ([key isEqualToString:@"thank_you_default"]) return @"Thank you!\nPlease visit us again.";
+            if ([key isEqualToString:@"phone"]) return @"Phone";
+            if ([key isEqualToString:@"business_number"]) return @"Business No";
+            if ([key isEqualToString:@"no_order_number"]) return @"No order number";
+            if ([key isEqualToString:@"no_table_info"]) return @"No table info";
+        } else if ([language isEqualToString:@"jpn"]) {
+            if ([key isEqualToString:@"store_info"]) return @"店舗情報";
+            if ([key isEqualToString:@"order_info"]) return @"注文情報";
+            if ([key isEqualToString:@"order_number"]) return @"注文番号";
+            if ([key isEqualToString:@"table"]) return @"テーブル";
+            if ([key isEqualToString:@"menu_list"]) return @"メニューリスト";
+            if ([key isEqualToString:@"subtotal"]) return @"小計";
+            if ([key isEqualToString:@"tax"]) return @"税金";
+            if ([key isEqualToString:@"total"]) return @"合計";
+            if ([key isEqualToString:@"thank_you_default"]) return @"ありがとうございます！\nまたお越しください。";
+            if ([key isEqualToString:@"phone"]) return @"電話";
+            if ([key isEqualToString:@"business_number"]) return @"事業者番号";
+            if ([key isEqualToString:@"no_order_number"]) return @"注文番号なし";
+            if ([key isEqualToString:@"no_table_info"]) return @"テーブル情報なし";
+        } else { // kor (기본값)
+            if ([key isEqualToString:@"store_info"]) return @"매장정보";
+            if ([key isEqualToString:@"order_info"]) return @"주문정보";
+            if ([key isEqualToString:@"order_number"]) return @"주문번호";
+            if ([key isEqualToString:@"table"]) return @"테이블";
+            if ([key isEqualToString:@"menu_list"]) return @"상품목록";
+            if ([key isEqualToString:@"subtotal"]) return @"소계";
+            if ([key isEqualToString:@"tax"]) return @"부가세";
+            if ([key isEqualToString:@"total"]) return @"합계";
+            if ([key isEqualToString:@"thank_you_default"]) return @"감사합니다!\n다음에 또 방문해 주세요.";
+            if ([key isEqualToString:@"phone"]) return @"전화";
+            if ([key isEqualToString:@"business_number"]) return @"사업자등록번호";
+            if ([key isEqualToString:@"no_order_number"]) return @"주문번호 없음";
+            if ([key isEqualToString:@"no_table_info"]) return @"테이블 정보 없음";
+        }
+        return key;
+    };
     
     @try {
         NSString* storeAddress = arguments[@"storeAddress"];
@@ -270,8 +321,8 @@
         NSString* thankYouMessage = arguments[@"thankYouMessage"];
         
         // 주문 기본 정보 추출
-        NSString* orderNumber = orderData[@"orderNumber"] ?: @"주문번호 없음";
-        NSString* tableName = orderData[@"tableName"] ?: @"테이블 정보 없음";
+        NSString* orderNumber = orderData[@"orderNumber"] ?: getLocalizedText(@"no_order_number");
+        NSString* tableName = orderData[@"tableName"] ?: getLocalizedText(@"no_table_info");
         
         // 주문 데이터에서 총 금액 자동 계산
         NSInteger calculatedTotalPrice = 0;
@@ -316,15 +367,15 @@
         [receiptText appendFormat:@"%@\n\n", storeName];
         
         // 매장정보 섹션
-        [receiptText appendString:@"매장정보, 20\n"];
+        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"store_info")];
         if (storeAddress) {
             [receiptText appendFormat:@"%@\n", storeAddress];
         }
         if (phoneNumber) {
-            [receiptText appendFormat:@"전화: %@\n", phoneNumber];
+            [receiptText appendFormat:@"%@: %@\n", getLocalizedText(@"phone"), phoneNumber];
         }
         if (businessNumber) {
-            [receiptText appendFormat:@"사업자등록번호: %@\n", businessNumber];
+            [receiptText appendFormat:@"%@: %@\n", getLocalizedText(@"business_number"), businessNumber];
         }
         [receiptText appendString:@"\n"];
         
@@ -333,12 +384,12 @@
         [receiptText appendString:@"================================\n\n"];
         
         // 주문 정보 섹션
-        [receiptText appendString:@"주문정보, 20\n"];
-        [receiptText appendFormat:@"주문번호: %@\n", orderNumber];
-        [receiptText appendFormat:@"테이블: %@\n\n", tableName];
+        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"order_info")];
+        [receiptText appendFormat:@"%@: %@\n", getLocalizedText(@"order_number"), orderNumber];
+        [receiptText appendFormat:@"%@: %@\n\n", getLocalizedText(@"table"), tableName];
         
         // 상품 목록 섹션
-        [receiptText appendString:@"상품목록, 20\n"];
+        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"menu_list")];
         if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
             for (NSDictionary* version in orderVersions) {
                 NSArray* orderItems = version[@"orderItems"];
@@ -384,23 +435,22 @@
         [receiptText appendString:@"줄바꿈, 2\n\n"];
         
         // 합계 섹션
-        [receiptText appendString:@"합계, 20\n"];
-        [receiptText appendFormat:@"소계: %@원\n", [self formatPrice:calculatedTotalPrice]];
+        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"total")];
+        [receiptText appendFormat:@"%@: %@원\n", getLocalizedText(@"subtotal"), [self formatPrice:calculatedTotalPrice]];
         NSInteger tax = (NSInteger)(calculatedTotalPrice * 0.1);
         NSInteger totalWithTax = calculatedTotalPrice + tax;
-        [receiptText appendFormat:@"부가세: %@원\n", [self formatPrice:tax]];
-        [receiptText appendFormat:@"합계: %@원\n\n", [self formatPrice:totalWithTax]];
+        [receiptText appendFormat:@"%@: %@원\n", getLocalizedText(@"tax"), [self formatPrice:tax]];
+        [receiptText appendFormat:@"%@: %@원\n\n", getLocalizedText(@"total"), [self formatPrice:totalWithTax]];
         
         // 줄바꿈 명령
         [receiptText appendString:@"줄바꿈, 2\n\n"];
         
         // 감사 메시지 섹션
-        [receiptText appendString:@"감사메시지, 20\n"];
+        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"thank_you_message")];
         if (thankYouMessage) {
             [receiptText appendFormat:@"%@\n\n", thankYouMessage];
         } else {
-            [receiptText appendString:@"감사합니다!\n"];
-            [receiptText appendString:@"다음에 또 방문해 주세요.\n\n"];
+            [receiptText appendFormat:@"%@\n\n", getLocalizedText(@"thank_you_default")];
         }
         
         // 줄바꿈 명령

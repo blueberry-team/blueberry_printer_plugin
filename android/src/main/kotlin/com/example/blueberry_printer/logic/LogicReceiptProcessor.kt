@@ -27,14 +27,69 @@ object LogicReceiptProcessor {
             storeAddress: String? = null,
             phoneNumber: String? = null,
             businessNumber: String? = null,
-            thankYouMessage: String? = null
+            thankYouMessage: String? = null,
+            language: String = "kor"
         ): String {
             val sb = StringBuilder()
             
+            // 다국어 텍스트 헬퍼 함수
+            fun getLocalizedText(key: String): String {
+                return when (language) {
+                    "eng" -> when (key) {
+                        "store_info" -> "Store Information"
+                        "order_info" -> "Order Information"
+                        "order_number" -> "Order No"
+                        "table" -> "Table"
+                        "menu_list" -> "Menu List"
+                        "subtotal" -> "Subtotal"
+                        "tax" -> "Tax"
+                        "total" -> "Total"
+                        "thank_you_default" -> "Thank you!\nPlease visit us again."
+                        "phone" -> "Phone"
+                        "business_number" -> "Business No"
+                        "no_order_number" -> "No order number"
+                        "no_table_info" -> "No table info"
+                        else -> key
+                    }
+                    "jpn" -> when (key) {
+                        "store_info" -> "店舗情報"
+                        "order_info" -> "注文情報"
+                        "order_number" -> "注文番号"
+                        "table" -> "テーブル"
+                        "menu_list" -> "メニューリスト"
+                        "subtotal" -> "小計"
+                        "tax" -> "税金"
+                        "total" -> "合計"
+                        "thank_you_default" -> "ありがとうございます！\nまたお越しください。"
+                        "phone" -> "電話"
+                        "business_number" -> "事業者番号"
+                        "no_order_number" -> "注文番号なし"
+                        "no_table_info" -> "テーブル情報なし"
+                        else -> key
+                    }
+                    else -> when (key) { // "kor" (기본값)
+                        "store_info" -> "매장정보"
+                        "order_info" -> "주문정보"
+                        "order_number" -> "주문번호"
+                        "table" -> "테이블"
+                        "menu_list" -> "상품목록"
+                        "subtotal" -> "소계"
+                        "tax" -> "부가세"
+                        "total" -> "합계"
+                        "thank_you_default" -> "감사합니다!\n다음에 또 방문해 주세요."
+                        "phone" -> "전화"
+                        "business_number" -> "사업자등록번호"
+                        "no_order_number" -> "주문번호 없음"
+                        "no_table_info" -> "테이블 정보 없음"
+                        else -> key
+                    }
+                }
+            }
+            
             try {
                 // 주문 기본 정보
-                val orderNumber = orderData["orderNumber"] as? String ?: "주문번호 없음"
-                val tableName = orderData["tableName"] as? String ?: "테이블 정보 없음"
+                val orderNumber = orderData["orderNumber"] as? String ?: getLocalizedText("no_order_number")
+                val tableName = orderData["tableName"] as? String ?: getLocalizedText("no_table_info")
                 
                 // 주문 데이터에서 총 금액 자동 계산
                 var calculatedTotalPrice = 0
@@ -65,15 +120,15 @@ object LogicReceiptProcessor {
                 sb.append("$storeName\n\n")
                 
                 // 매장정보 섹션
-                sb.append("매장정보, 20\n")
+                sb.append("${getLocalizedText("store_info")}, 20\n")
                 if (storeAddress != null) {
                     sb.append("$storeAddress\n")
                 }
                 if (phoneNumber != null) {
-                    sb.append("전화: $phoneNumber\n")
+                    sb.append("${getLocalizedText("phone")}: $phoneNumber\n")
                 }
                 if (businessNumber != null) {
-                    sb.append("사업자등록번호: $businessNumber\n")
+                    sb.append("${getLocalizedText("business_number")}: $businessNumber\n")
                 }
                 sb.append("\n")
                 
@@ -82,12 +137,12 @@ object LogicReceiptProcessor {
                 sb.append("================================\n\n")
                 
                 // 주문 정보 섹션
-                sb.append("주문정보, 20\n")
-                sb.append("주문번호: $orderNumber\n")
-                sb.append("테이블: $tableName\n\n")
+                sb.append("${getLocalizedText("order_info")}, 20\n")
+                sb.append("${getLocalizedText("order_number")}: $orderNumber\n")
+                sb.append("${getLocalizedText("table")}: $tableName\n\n")
                 
                 // 상품 목록 섹션
-                sb.append("상품목록, 20\n")
+                sb.append("${getLocalizedText("menu_list")}, 20\n")
                 val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
                 
                 for (version in orderVersions) {
@@ -122,12 +177,12 @@ object LogicReceiptProcessor {
                 sb.append("줄바꿈, 2\n\n")
                 
                 // 합계 섹션
-                sb.append("합계, 20\n")
-                sb.append("소계: ${formatPrice(calculatedTotalPrice)}원\n")
+                sb.append("${getLocalizedText("total")}, 20\n")
+                sb.append("${getLocalizedText("subtotal")}: ${formatPrice(calculatedTotalPrice)}원\n")
                 val tax = (calculatedTotalPrice * 0.1).toInt()
                 val totalWithTax = calculatedTotalPrice + tax
-                sb.append("부가세: ${formatPrice(tax)}원\n")
-                sb.append("합계: ${formatPrice(totalWithTax)}원\n\n")
+                sb.append("${getLocalizedText("tax")}: ${formatPrice(tax)}원\n")
+                sb.append("${getLocalizedText("total")}: ${formatPrice(totalWithTax)}원\n\n")
                 
                 // 줄바꿈 명령
                 sb.append("줄바꿈, 2\n\n")
@@ -137,8 +192,7 @@ object LogicReceiptProcessor {
                 if (thankYouMessage != null) {
                     sb.append("$thankYouMessage\n\n")
                 } else {
-                    sb.append("감사합니다!\n")
-                    sb.append("다음에 또 방문해 주세요.\n\n")
+                    sb.append("${getLocalizedText("thank_you_default")}\n\n")
                 }
                 
                 // 줄바꿈 명령
