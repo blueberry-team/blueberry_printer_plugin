@@ -34,7 +34,27 @@ class BlueberryPrinter {
   }
 
   /// 구조화된 주문 데이터로 영수증 출력
-  Future<bool> printOrderReceipt(OrderDetailResponse orderData) {
-    return BlueberryPrinterPlatform.instance.printOrderReceipt(orderData);
+  /// [orderData] 주문 데이터
+  /// [storeName] 매장명
+  /// [storeAddress] 매장 주소 (선택사항)
+  /// [phoneNumber] 전화번호 (선택사항)
+  /// [businessNumber] 사업자등록번호 (선택사항)
+  /// [thankYouMessage] 감사 메시지 (선택사항)
+  Future<bool> printOrderReceipt(
+    OrderDetailResponse orderData, {
+    required String storeName,
+    String? storeAddress,
+    String? phoneNumber,
+    String? businessNumber,
+    String? thankYouMessage,
+  }) {
+    return BlueberryPrinterPlatform.instance.printOrderReceipt(
+      orderData,
+      storeName: storeName,
+      storeAddress: storeAddress,
+      phoneNumber: phoneNumber,
+      businessNumber: businessNumber,
+      thankYouMessage: thankYouMessage,
+    );
   }
 }

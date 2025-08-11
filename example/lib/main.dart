@@ -402,7 +402,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
       print('🔍 [DEBUG] 네이티브 함수 호출 전: printOrderReceipt');
       print('🔍 [DEBUG] 전달할 데이터: ${sampleOrderData.toJson()}');
-      final success = await _blueberryPrinterPlugin.printOrderReceipt(sampleOrderData);
+      final success = await _blueberryPrinterPlugin.printOrderReceipt(
+        sampleOrderData,
+        storeName: '정우정우정우',
+        storeAddress: '정우특별시 정우구 정우로 123',
+        phoneNumber: '02-8513-6357',
+        businessNumber: '333-33-3333',
+        thankYouMessage: '감사합니다냥!!\n다음에 또 방문해 주세냥.',
+      );
       print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

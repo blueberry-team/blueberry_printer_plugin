@@ -76,14 +76,18 @@
     else if ([@"printOrderReceipt" isEqualToString:call.method]) {
         NSDictionary* args = call.arguments;
         NSDictionary* orderData = args[@"orderData"];
-        if (!orderData) {
-            NSLog(@" [DEBUG] 출력 실패: 주문 데이터 없음");
+        NSString* storeName = args[@"storeName"];
+        if (!orderData || !storeName) {
+            NSLog(@"🔍 [DEBUG] 출력 실패: 주문 데이터 또는 매장명 없음");
             result([FlutterError errorWithCode:@"NO_DATA" 
-                                     message:@"주문 데이터가 필요합니다" 
+                                     message:@"주문 데이터와 매장명이 필요합니다" 
                                      details:nil]);
             return;
         }
-        [self printOrderReceipt:orderData result:result];
+        NSLog(@"🔍 [DEBUG] iOS에서 받은 인자: %@", args);
+        printf("🔍 [DEBUG] iOS printOrderReceipt 호출 시작\n");
+        fflush(stdout);
+        [self printOrderReceipt:args result:result];
     }
     else if ([@"disconnect" isEqualToString:call.method]) {
         [self disconnect:result];
@@ -247,28 +251,82 @@
     [self printReceipt:sampleText result:result];
 }
 
-- (void)printOrderReceipt:(NSDictionary*)orderData result:(FlutterResult)result {
+- (void)printOrderReceipt:(NSDictionary*)arguments result:(FlutterResult)result {
     NSLog(@"🔍 [DEBUG] 구조화된 주문 영수증 출력 시도");
+    printf("🔍 [DEBUG] iOS printOrderReceipt 메서드 시작\n");
+    fflush(stdout);
+    
+    // 인자에서 데이터 추출 (에러 처리에서도 사용하기 위해 @try 밖에 선언)
+    NSDictionary* orderData = arguments[@"orderData"];
+    NSString* storeName = arguments[@"storeName"] ?: @"매장명 없음";
+    
+    printf("🔍 [DEBUG] iOS 매장명: %s\n", [storeName UTF8String]);
+    fflush(stdout);
     
     @try {
+        NSString* storeAddress = arguments[@"storeAddress"];
+        NSString* phoneNumber = arguments[@"phoneNumber"];
+        NSString* businessNumber = arguments[@"businessNumber"];
+        NSString* thankYouMessage = arguments[@"thankYouMessage"];
+        
         // 주문 기본 정보 추출
         NSString* orderNumber = orderData[@"orderNumber"] ?: @"주문번호 없음";
         NSString* tableName = orderData[@"tableName"] ?: @"테이블 정보 없음";
-        NSNumber* totalPriceNum = orderData[@"totalPrice"];
-        NSInteger totalPrice = totalPriceNum ? [totalPriceNum integerValue] : 0;
+        
+        // 주문 데이터에서 총 금액 자동 계산
+        NSInteger calculatedTotalPrice = 0;
+        NSArray* orderVersions = orderData[@"orderVersion"];
+        if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
+            for (NSDictionary* version in orderVersions) {
+                NSArray* orderItems = version[@"orderItems"];
+                if (orderItems && [orderItems isKindOfClass:[NSArray class]]) {
+                    for (NSDictionary* item in orderItems) {
+                        NSNumber* itemPriceNum = item[@"price"];
+                        NSInteger itemPrice = itemPriceNum ? [itemPriceNum integerValue] : 0;
+                        calculatedTotalPrice += itemPrice;
+                        
+                        // 옵션 가격도 추가
+                        NSArray* options = item[@"options"];
+                        if (options && [options isKindOfClass:[NSArray class]]) {
+                            for (NSDictionary* option in options) {
+                                NSArray* selectedItems = option[@"selectedItems"];
+                                if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
+                                    for (NSDictionary* selectedItem in selectedItems) {
+                                        NSNumber* optionPriceNum = selectedItem[@"itemPrice"];
+                                        NSNumber* optionQuantityNum = selectedItem[@"quantity"];
+                                        NSInteger optionPrice = optionPriceNum ? [optionPriceNum integerValue] : 0;
+                                        NSInteger optionQuantity = optionQuantityNum ? [optionQuantityNum integerValue] : 0;
+                                        calculatedTotalPrice += (optionPrice * optionQuantity);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        NSLog(@"🔍 [DEBUG] 계산된 총 금액: %ld", (long)calculatedTotalPrice);
         
         // 영수증 포맷 생성
         NSMutableString* receiptText = [[NSMutableString alloc] init];
         
         // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
         [receiptText appendString:@"타이틀, 80\n"];
-        [receiptText appendString:@"카페 블루베리\n\n"];
+        [receiptText appendFormat:@"%@\n\n", storeName];
         
         // 매장정보 섹션
         [receiptText appendString:@"매장정보, 20\n"];
-        [receiptText appendString:@"서울특별시 강남구 테헤란로 123\n"];
-        [receiptText appendString:@"전화: 02-1234-5678\n"];
-        [receiptText appendString:@"사업자등록번호: 123-45-67890\n\n"];
+        if (storeAddress) {
+            [receiptText appendFormat:@"%@\n", storeAddress];
+        }
+        if (phoneNumber) {
+            [receiptText appendFormat:@"전화: %@\n", phoneNumber];
+        }
+        if (businessNumber) {
+            [receiptText appendFormat:@"사업자등록번호: %@\n", businessNumber];
+        }
+        [receiptText appendString:@"\n"];
         
         // 구분선 섹션
         [receiptText appendString:@"구분선, 20\n"];
@@ -281,8 +339,6 @@
         
         // 상품 목록 섹션
         [receiptText appendString:@"상품목록, 20\n"];
-        
-        NSArray* orderVersions = orderData[@"orderVersion"];
         if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
             for (NSDictionary* version in orderVersions) {
                 NSArray* orderItems = version[@"orderItems"];
@@ -329,9 +385,9 @@
         
         // 합계 섹션
         [receiptText appendString:@"합계, 20\n"];
-        [receiptText appendFormat:@"소계: %@원\n", [self formatPrice:totalPrice]];
-        NSInteger tax = (NSInteger)(totalPrice * 0.1);
-        NSInteger totalWithTax = totalPrice + tax;
+        [receiptText appendFormat:@"소계: %@원\n", [self formatPrice:calculatedTotalPrice]];
+        NSInteger tax = (NSInteger)(calculatedTotalPrice * 0.1);
+        NSInteger totalWithTax = calculatedTotalPrice + tax;
         [receiptText appendFormat:@"부가세: %@원\n", [self formatPrice:tax]];
         [receiptText appendFormat:@"합계: %@원\n\n", [self formatPrice:totalWithTax]];
         
@@ -340,8 +396,12 @@
         
         // 감사 메시지 섹션
         [receiptText appendString:@"감사메시지, 20\n"];
-        [receiptText appendString:@"감사합니다!\n"];
-        [receiptText appendString:@"다음에 또 방문해 주세요.\n\n"];
+        if (thankYouMessage) {
+            [receiptText appendFormat:@"%@\n\n", thankYouMessage];
+        } else {
+            [receiptText appendString:@"감사합니다!\n"];
+            [receiptText appendString:@"다음에 또 방문해 주세요.\n\n"];
+        }
         
         // 줄바꿈 명령
         [receiptText appendString:@"줄바꿈, 3\n\n"];
@@ -357,7 +417,7 @@
     } @catch (NSException *exception) {
         NSLog(@"🔍 [DEBUG] 구조화된 영수증 처리 오류: %@", exception.reason);
         // 에러 시 기본 영수증 출력
-        NSString* fallbackText = @"타이틀, 80\n카페 블루베리\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기";
+        NSString* fallbackText = [NSString stringWithFormat:@"타이틀, 80\n%@\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기", storeName ?: @"매장"];
         [self printReceipt:fallbackText result:result];
     }
 }

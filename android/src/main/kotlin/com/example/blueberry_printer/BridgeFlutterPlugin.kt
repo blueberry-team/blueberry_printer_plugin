@@ -137,11 +137,19 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
       }
       "printOrderReceipt" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
-        if (orderData == null) {
-          result.error("NO_DATA", "주문 데이터가 필요합니다", null)
+        val storeName = call.argument<String>("storeName")
+        val storeAddress = call.argument<String>("storeAddress")
+        val phoneNumber = call.argument<String>("phoneNumber")
+        val businessNumber = call.argument<String>("businessNumber")
+        val thankYouMessage = call.argument<String>("thankYouMessage")
+        
+        if (orderData == null || storeName == null) {
+          result.error("NO_DATA", "주문 데이터와 매장명이 필요합니다", null)
           return
         }
+        
         Log.d("BridgeFlutterPlugin", "전달받은 주문 데이터: $orderData")
+        Log.d("BridgeFlutterPlugin", "매장 정보 - 이름: $storeName, 주소: $storeAddress, 전화: $phoneNumber")
         
         val stream = outputStream
         if (stream == null) {
@@ -151,7 +159,9 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         
         try {
           Log.d("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 시작")
-          val formattedReceipt = LogicReceiptProcessor.formatOrderReceipt(orderData)
+          val formattedReceipt = LogicReceiptProcessor.formatOrderReceipt(
+            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage
+          )
           Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")
           LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)

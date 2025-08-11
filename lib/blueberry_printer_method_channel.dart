@@ -53,13 +53,26 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   }
 
   @override
-  Future<bool> printOrderReceipt(OrderDetailResponse orderData) async {
+  Future<bool> printOrderReceipt(
+    OrderDetailResponse orderData, {
+    required String storeName,
+    String? storeAddress,
+    String? phoneNumber,
+    String? businessNumber,
+    String? thankYouMessage,
+  }) async {
     print('🔍 [DEBUG] MethodChannel: printOrderReceipt 호출 시작');
     print('🔍 [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
+    print('🔍 [DEBUG] MethodChannel: 매장명: $storeName');
     
     try {
       final bool result = await methodChannel.invokeMethod('printOrderReceipt', {
         'orderData': orderData.toJson(),
+        'storeName': storeName,
+        'storeAddress': storeAddress,
+        'phoneNumber': phoneNumber,
+        'businessNumber': businessNumber,
+        'thankYouMessage': thankYouMessage,
       });
       print('🔍 [DEBUG] MethodChannel: 성공 결과: $result');
       return result;

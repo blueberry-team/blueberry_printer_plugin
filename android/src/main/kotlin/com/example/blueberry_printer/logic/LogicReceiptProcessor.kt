@@ -14,25 +14,68 @@ object LogicReceiptProcessor {
         
         /**
          * 주문 데이터를 영수증 포맷으로 변환
+         * @param orderData 주문 데이터
+         * @param storeName 매장명
+         * @param storeAddress 매장 주소 (선택사항)
+         * @param phoneNumber 전화번호 (선택사항)
+         * @param businessNumber 사업자등록번호 (선택사항)
+         * @param thankYouMessage 감사 메시지 (선택사항)
          */
-        fun formatOrderReceipt(orderData: Map<String, Any>): String {
+        fun formatOrderReceipt(
+            orderData: Map<String, Any>,
+            storeName: String,
+            storeAddress: String? = null,
+            phoneNumber: String? = null,
+            businessNumber: String? = null,
+            thankYouMessage: String? = null
+        ): String {
             val sb = StringBuilder()
             
             try {
                 // 주문 기본 정보
                 val orderNumber = orderData["orderNumber"] as? String ?: "주문번호 없음"
                 val tableName = orderData["tableName"] as? String ?: "테이블 정보 없음"
-                val totalPrice = orderData["totalPrice"] as? Int ?: 0
+                
+                // 주문 데이터에서 총 금액 자동 계산
+                var calculatedTotalPrice = 0
+                val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
+                for (version in orderVersions) {
+                    val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
+                    for (item in orderItems) {
+                        val itemPrice = item["price"] as? Int ?: 0
+                        calculatedTotalPrice += itemPrice
+                        
+                        // 옵션 가격도 추가
+                        val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
+                        for (option in options) {
+                            val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
+                            for (selectedItem in selectedItems) {
+                                val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
+                                val optionQuantity = selectedItem["quantity"] as? Int ?: 0
+                                calculatedTotalPrice += (optionPrice * optionQuantity)
+                            }
+                        }
+                    }
+                }
+                
+                Log.d(TAG, "계산된 총 금액: $calculatedTotalPrice")
                 
                 // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
                 sb.append("타이틀, 80\n")
-                sb.append("카페 블루베리\n\n")
+                sb.append("$storeName\n\n")
                 
                 // 매장정보 섹션
                 sb.append("매장정보, 20\n")
-                sb.append("서울특별시 강남구 테헤란로 123\n")
-                sb.append("전화: 02-1234-5678\n")
-                sb.append("사업자등록번호: 123-45-67890\n\n")
+                if (storeAddress != null) {
+                    sb.append("$storeAddress\n")
+                }
+                if (phoneNumber != null) {
+                    sb.append("전화: $phoneNumber\n")
+                }
+                if (businessNumber != null) {
+                    sb.append("사업자등록번호: $businessNumber\n")
+                }
+                sb.append("\n")
                 
                 // 구분선 섹션
                 sb.append("구분선, 20\n")
@@ -80,9 +123,9 @@ object LogicReceiptProcessor {
                 
                 // 합계 섹션
                 sb.append("합계, 20\n")
-                sb.append("소계: ${formatPrice(totalPrice)}원\n")
-                val tax = (totalPrice * 0.1).toInt()
-                val totalWithTax = totalPrice + tax
+                sb.append("소계: ${formatPrice(calculatedTotalPrice)}원\n")
+                val tax = (calculatedTotalPrice * 0.1).toInt()
+                val totalWithTax = calculatedTotalPrice + tax
                 sb.append("부가세: ${formatPrice(tax)}원\n")
                 sb.append("합계: ${formatPrice(totalWithTax)}원\n\n")
                 
@@ -91,8 +134,12 @@ object LogicReceiptProcessor {
                 
                 // 감사 메시지 섹션
                 sb.append("감사메시지, 20\n")
-                sb.append("감사합니다!\n")
-                sb.append("다음에 또 방문해 주세요.\n\n")
+                if (thankYouMessage != null) {
+                    sb.append("$thankYouMessage\n\n")
+                } else {
+                    sb.append("감사합니다!\n")
+                    sb.append("다음에 또 방문해 주세요.\n\n")
+                }
                 
                 // 줄바꿈 명령
                 sb.append("줄바꿈, 3\n\n")
@@ -103,7 +150,7 @@ object LogicReceiptProcessor {
             } catch (e: Exception) {
                 Log.e(TAG, "주문 영수증 포맷팅 실패", e)
                 // 에러 시 기본 영수증 반환 (커스텀 영수증과 동일한 포맷)
-                return "타이틀, 80\n카페 블루베리\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기"
+                return "타이틀, 80\n$storeName\n\n감사메시지, 20\n감사합니다!\n\n영수증 자르기"
             }
             
             return sb.toString()
