@@ -63,25 +63,35 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     String language = 'kor',
     String currency = 'KRW',
   }) async {
-    print('🔍 [DEBUG] MethodChannel: printOrderReceipt 호출 시작');
-    print('🔍 [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
-    print('🔍 [DEBUG] MethodChannel: 매장명: $storeName');
-    
+    print(' [DEBUG] MethodChannel: printOrderReceipt 호출 시작');
+    print(' [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
+    print(' [DEBUG] MethodChannel: 매장명: $storeName');
+  
+    // 파라미터의 쉼표를 일본 쉼표로 변경하여 파싱 오류 방지
+    String sanitizedStoreName = storeName.replaceAll(',', '、');
+    String? sanitizedStoreAddress = storeAddress?.replaceAll(',', '、');
+    String? sanitizedPhoneNumber = phoneNumber?.replaceAll(',', '、');
+    String? sanitizedBusinessNumber = businessNumber?.replaceAll(',', '、');
+    String? sanitizedThankYouMessage = thankYouMessage?.replaceAll(',', '、');
+  
+    print(' [DEBUG] MethodChannel: 쉼표 제거 후 - 매장명: $sanitizedStoreName');
+    print(' [DEBUG] MethodChannel: 쉼표 제거 후 - 주소: $sanitizedStoreAddress');
+  
     try {
       final bool result = await methodChannel.invokeMethod('printOrderReceipt', {
         'orderData': orderData.toJson(),
-        'storeName': storeName,
-        'storeAddress': storeAddress,
-        'phoneNumber': phoneNumber,
-        'businessNumber': businessNumber,
-        'thankYouMessage': thankYouMessage,
+        'storeName': sanitizedStoreName,
+        'storeAddress': sanitizedStoreAddress,
+        'phoneNumber': sanitizedPhoneNumber,
+        'businessNumber': sanitizedBusinessNumber,
+        'thankYouMessage': sanitizedThankYouMessage,
         'language': language,
         'currency': currency,
       });
-      print('🔍 [DEBUG] MethodChannel: 성공 결과: $result');
+      print(' [DEBUG] MethodChannel: 성공 결과: $result');
       return result;
     } catch (e) {
-      print('🔍 [DEBUG] MethodChannel: 오류 발생: $e');
+      print(' [DEBUG] MethodChannel: 오류 발생: $e');
       rethrow;
     }
   }
