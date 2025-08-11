@@ -48,14 +48,15 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     throw UnimplementedError('disconnect() has not been implemented.');
   }
 
-  /// 구조화된 주문 데이터로 영수증 출력
+  /// 단일 주문 데이터로 영수증 출력 (점포용)
   /// [orderData] 주문 데이터
   /// [storeName] 매장명
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
-  Future<bool> printOrderReceipt(
+  /// [showStoreLabel] 점포용 라벨 표시 여부
+  Future<bool> printSingleOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -64,18 +65,19 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     String? thankYouMessage,
     String language = 'kor', // kor, eng, jpn
     String currency = 'KRW',
+    bool showStoreLabel = true,
   }) {
-    throw UnimplementedError('printOrderReceipt() has not been implemented.');
+    throw UnimplementedError('printSingleOrder() has not been implemented.');
   }
 
-  /// 누적 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
+  /// 전체 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
   /// [orderData] 주문 데이터 (모든 버전 포함)
   /// [storeName] 매장명
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
-  Future<bool> printCumulativeOrderReceipt(
+  Future<bool> printTotalOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -85,6 +87,6 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     String language = 'kor', // kor, eng, jpn
     String currency = 'KRW',
   }) {
-    throw UnimplementedError('printCumulativeOrderReceipt() has not been implemented.');
+    throw UnimplementedError('printTotalOrder() has not been implemented.');
   }
 }

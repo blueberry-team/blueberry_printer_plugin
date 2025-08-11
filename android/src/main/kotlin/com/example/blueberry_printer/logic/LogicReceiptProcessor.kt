@@ -13,15 +13,16 @@ object LogicReceiptProcessor {
         private const val TAG = "LogicReceiptProcessor"
         
         /**
-         * 주문 데이터를 영수증 포맷으로 변환
+         * 단일 주문 데이터를 영수증 포맷으로 변환 (점포용)
          * @param orderData 주문 데이터
          * @param storeName 매장명
          * @param storeAddress 매장 주소 (선택사항)
          * @param phoneNumber 전화번호 (선택사항)
          * @param businessNumber 사업자등록번호 (선택사항)
          * @param thankYouMessage 감사 메시지 (선택사항)
+         * @param showStoreLabel 점포용 라벨 표시 여부
          */
-        fun formatOrderReceipt(
+        fun formatSingleOrderReceipt(
             orderData: Map<String, Any>,
             storeName: String,
             storeAddress: String? = null,
@@ -29,7 +30,8 @@ object LogicReceiptProcessor {
             businessNumber: String? = null,
             thankYouMessage: String? = null,
             language: String = "kor",
-            currency: String = "KRW"
+            currency: String = "KRW",
+            showStoreLabel: Boolean = true
         ): String {
             val sb = StringBuilder()
             
@@ -127,6 +129,14 @@ object LogicReceiptProcessor {
                 
                 Log.d(TAG, "계산된 총 금액: $calculatedTotalPrice")
                 
+                // 점포용 라벨 섹션 (요청 시에만 표시)
+                if (showStoreLabel) {
+                    sb.append("점포용라벨, 24\n")
+                    sb.append("┌────────────────────┐\n")
+                    sb.append("│        ${getLocalizedText("store_label")}        │\n")
+                    sb.append("└────────────────────┘\n\n")
+                }
+                
                 // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
                 sb.append("타이틀, 80\n")
                 sb.append("$storeName\n\n")
@@ -163,21 +173,43 @@ object LogicReceiptProcessor {
                     for (item in orderItems) {
                         val menuName = item["menuName"] as? String ?: "상품명 없음"
                         val quantity = item["quantity"] as? Int ?: 0
-                        val price = item["price"] as? Int ?: 0
+                        val basePrice = item["price"] as? Int ?: 0
                         
-                        sb.append("$menuName x$quantity = ${formatPrice(price)}${getCurrencySymbol()}\n")
+                        // 메뉴 기본 가격 계산
+                        val menuTotalPrice = basePrice * quantity
                         
-                        // 옵션 처리
+                        // 옵션 가격 계산
+                        var optionTotalPrice = 0
                         val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
                         for (option in options) {
                             val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                             for (selectedItem in selectedItems) {
-                                val itemName = selectedItem["itemName"] as? String ?: "옵션명 없음"
                                 val itemPrice = selectedItem["itemPrice"] as? Int ?: 0
                                 val itemQuantity = selectedItem["quantity"] as? Int ?: 0
-                                
-                                if (itemPrice > 0) {
-                                    sb.append("  + $itemName x$itemQuantity = ${formatPrice(itemPrice)}${getCurrencySymbol()}\n")
+                                optionTotalPrice += (itemPrice * itemQuantity)
+                            }
+                        }
+                        
+                        // 최종 가격 = 메뉴가격 x 개수 + 옵션가격 합계
+                        val finalPrice = menuTotalPrice + optionTotalPrice
+                        sb.append("$menuName x$quantity = ${formatPrice(finalPrice)}${getCurrencySymbol()}\n")
+                        
+                        // 옵션 상세 표시 (옵션이 있는 경우에만, 가격 없이 옵션명만)
+                        if (optionTotalPrice > 0) {
+                            for (option in options) {
+                                val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
+                                for (selectedItem in selectedItems) {
+                                    val itemName = selectedItem["itemName"] as? String ?: "옵션명 없음"
+                                    val itemPrice = selectedItem["itemPrice"] as? Int ?: 0
+                                    val itemQuantity = selectedItem["quantity"] as? Int ?: 0
+                                    
+                                    if (itemPrice > 0) {
+                                        if (itemQuantity > 1) {
+                                            sb.append("  - $itemName x$itemQuantity\n")
+                                        } else {
+                                            sb.append("  - $itemName\n")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -219,7 +251,7 @@ object LogicReceiptProcessor {
         }
         
         /**
-         * 누적 주문 데이터를 영수증 포맷으로 변환 (모든 주문 버전 포함)
+         * 전체 주문 데이터를 영수증 포맷으로 변환 (모든 주문 버전 포함)
          * @param orderData 주문 데이터 (모든 버전 포함)
          * @param storeName 매장명
          * @param storeAddress 매장 주소 (선택사항)
@@ -227,7 +259,7 @@ object LogicReceiptProcessor {
          * @param businessNumber 사업자등록번호 (선택사항)
          * @param thankYouMessage 감사 메시지 (선택사항)
          */
-        fun formatCumulativeOrderReceipt(
+        fun formatTotalOrderReceipt(
             orderData: Map<String, Any>,
             storeName: String,
             storeAddress: String? = null,
@@ -346,7 +378,7 @@ object LogicReceiptProcessor {
                 // 누적 상품 목록 섹션 (모든 버전 합치기)
                 sb.append("${getLocalizedText("menu_list")}, 20\n")
                 
-                // 모든 버전의 상품을 합치기 위한 Map
+                // 모든 버전의 상품을 합치기 위한 Map (메뉴명 + 옵션 조합을 기준으로)
                 val mergedItems = mutableMapOf<String, MutableMap<String, Any>>()
                 
                 // 모든 버전의 상품 수집
@@ -356,67 +388,74 @@ object LogicReceiptProcessor {
                     for (item in orderItems) {
                         val menuName = item["menuName"] as? String ?: "상품명 없음"
                         val quantity = item["quantity"] as? Int ?: 0
-                        val price = item["price"] as? Int ?: 0
+                        val basePrice = item["price"] as? Int ?: 0
                         
-                        // 메뉴 아이템 합치기
-                        if (mergedItems.containsKey(menuName)) {
-                            val existingItem = mergedItems[menuName]!!
-                            existingItem["quantity"] = (existingItem["quantity"] as Int) + quantity
-                            existingItem["totalPrice"] = (existingItem["totalPrice"] as Int) + (price * quantity)
-                        } else {
-                            mergedItems[menuName] = mutableMapOf(
-                                "quantity" to quantity,
-                                "unitPrice" to price,
-                                "totalPrice" to (price * quantity),
-                                "options" to mutableMapOf<String, MutableMap<String, Any>>()
-                            )
-                        }
-                        
-                        // 옵션 처리 및 합치기
+                        // 옵션 정보를 포함한 고유 키 생성
                         val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
-                        val mergedOptions = mergedItems[menuName]!!["options"] as MutableMap<String, MutableMap<String, Any>>
+                        val optionKey = StringBuilder()
+                        var optionTotalPrice = 0
                         
                         for (option in options) {
                             val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                             for (selectedItem in selectedItems) {
-                                val optionName = selectedItem["itemName"] as? String ?: "옵션명 없음"
+                                val optionName = selectedItem["itemName"] as? String ?: ""
                                 val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
                                 val optionQuantity = selectedItem["quantity"] as? Int ?: 0
-                                
                                 if (optionPrice > 0) {
-                                    if (mergedOptions.containsKey(optionName)) {
-                                        val existingOption = mergedOptions[optionName]!!
-                                        existingOption["quantity"] = (existingOption["quantity"] as Int) + optionQuantity
-                                        existingOption["totalPrice"] = (existingOption["totalPrice"] as Int) + (optionPrice * optionQuantity)
-                                    } else {
-                                        mergedOptions[optionName] = mutableMapOf(
-                                            "quantity" to optionQuantity,
-                                            "unitPrice" to optionPrice,
-                                            "totalPrice" to (optionPrice * optionQuantity)
-                                        )
-                                    }
+                                    optionKey.append("|$optionName:$optionQuantity")
+                                    optionTotalPrice += (optionPrice * optionQuantity)
                                 }
                             }
+                        }
+                        
+                        // 메뉴명 + 옵션 조합을 기준으로 한 고유 키
+                        val uniqueKey = "$menuName$optionKey"
+                        val totalItemPrice = (basePrice * quantity) + optionTotalPrice
+                        
+                        // 메뉴 아이템 합치기 (동일한 메뉴 + 옵션 조합인 경우에만)
+                        if (mergedItems.containsKey(uniqueKey)) {
+                            val existingItem = mergedItems[uniqueKey]!!
+                            existingItem["quantity"] = (existingItem["quantity"] as Int) + quantity
+                            existingItem["totalPrice"] = (existingItem["totalPrice"] as Int) + totalItemPrice
+                        } else {
+                            mergedItems[uniqueKey] = mutableMapOf(
+                                "menuName" to menuName,
+                                "quantity" to quantity,
+                                "basePrice" to basePrice,
+                                "totalPrice" to totalItemPrice,
+                                "options" to options
+                            )
                         }
                     }
                 }
                 
                 // 합쳐진 상품 출력
-                for ((menuName, itemData) in mergedItems) {
+                for ((uniqueKey, itemData) in mergedItems) {
+                    val menuName = itemData["menuName"] as String
                     val quantity = itemData["quantity"] as Int
                     val totalPrice = itemData["totalPrice"] as Int
+                    val options = itemData["options"] as List<Map<String, Any>>
+                    
                     grandTotalPrice += totalPrice
                     
                     sb.append("$menuName x$quantity = ${formatPrice(totalPrice)}${getCurrencySymbol()}\n")
                     
-                    // 합쳐진 옵션 출력
-                    val options = itemData["options"] as Map<String, Map<String, Any>>
-                    for ((optionName, optionData) in options) {
-                        val optionQuantity = optionData["quantity"] as Int
-                        val optionTotalPrice = optionData["totalPrice"] as Int
-                        grandTotalPrice += optionTotalPrice
-                        
-                        sb.append("  + $optionName x$optionQuantity = ${formatPrice(optionTotalPrice)}${getCurrencySymbol()}\n")
+                    // 옵션 표시 (가격 없이 옵션명만)
+                    for (option in options) {
+                        val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
+                        for (selectedItem in selectedItems) {
+                            val optionName = selectedItem["itemName"] as? String ?: "옵션명 없음"
+                            val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
+                            val optionQuantity = selectedItem["quantity"] as? Int ?: 0
+                            
+                            if (optionPrice > 0) {
+                                if (optionQuantity > 1) {
+                                    sb.append("  - $optionName x$optionQuantity\n")
+                                } else {
+                                    sb.append("  - $optionName\n")
+                                }
+                            }
+                        }
                     }
                 }
                 

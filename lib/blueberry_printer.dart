@@ -33,14 +33,15 @@ class BlueberryPrinter {
     return BlueberryPrinterPlatform.instance.disconnect();
   }
 
-  /// 구조화된 주문 데이터로 영수증 출력
+  /// 단일 주문 데이터로 영수증 출력 (점포용)
   /// [orderData] 주문 데이터
   /// [storeName] 매장명
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
-  Future<bool> printOrderReceipt(
+  /// [showStoreLabel] 점포용 라벨 표시 여부 (기본값: true)
+  Future<bool> printSingleOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -49,8 +50,9 @@ class BlueberryPrinter {
     String? thankYouMessage,
     String language = 'kor', // kor, eng, jpn
     String currency = 'KRW', // KRW, USD, JPY, etc.
+    bool showStoreLabel = true, // 점포용 라벨 표시 여부
   }) {
-    return BlueberryPrinterPlatform.instance.printOrderReceipt(
+    return BlueberryPrinterPlatform.instance.printSingleOrder(
       orderData,
       storeName: storeName,
       storeAddress: storeAddress,
@@ -59,17 +61,18 @@ class BlueberryPrinter {
       thankYouMessage: thankYouMessage,
       language: language,
       currency: currency,
+      showStoreLabel: showStoreLabel,
     );
   }
 
-  /// 누적 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
+  /// 전체 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
   /// [orderData] 주문 데이터 (모든 버전 포함)
   /// [storeName] 매장명
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
-  Future<bool> printCumulativeOrderReceipt(
+  Future<bool> printTotalOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -79,7 +82,7 @@ class BlueberryPrinter {
     String language = 'kor', // kor, eng, jpn
     String currency = 'KRW', // KRW, USD, JPY, etc.
   }) {
-    return BlueberryPrinterPlatform.instance.printCumulativeOrderReceipt(
+    return BlueberryPrinterPlatform.instance.printTotalOrder(
       orderData,
       storeName: storeName,
       storeAddress: storeAddress,

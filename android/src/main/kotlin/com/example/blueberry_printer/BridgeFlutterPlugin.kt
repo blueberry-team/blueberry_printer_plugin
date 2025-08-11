@@ -135,7 +135,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
           result.error("PRINT_FAIL", "샘플 영수증 출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
-      "printOrderReceipt" -> {
+      "printSingleOrder" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
         val storeName = call.argument<String>("storeName")
         val storeAddress = call.argument<String>("storeAddress")
@@ -144,6 +144,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         val thankYouMessage = call.argument<String>("thankYouMessage")
         val language = call.argument<String>("language") ?: "kor"
         val currency = call.argument<String>("currency") ?: "KRW"
+        val showStoreLabel = call.argument<Boolean>("showStoreLabel") ?: true
         
         if (orderData == null || storeName == null) {
           result.error("NO_DATA", "주문 데이터와 매장명이 필요합니다", null)
@@ -152,7 +153,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         
         Log.d("BridgeFlutterPlugin", "전달받은 주문 데이터: $orderData")
         Log.d("BridgeFlutterPlugin", "매장 정보 - 이름: $storeName, 주소: $storeAddress, 전화: $phoneNumber")
-        Log.d("BridgeFlutterPlugin", "Android printOrderReceipt 호출 - 매장명: $storeName, 언어: $language, 화폐: $currency")
+        Log.d("BridgeFlutterPlugin", "Android printSingleOrder 호출 - 매장명: $storeName, 언어: $language, 화폐: $currency, 점포용 라벨: $showStoreLabel")
         
         val stream = outputStream
         if (stream == null) {
@@ -161,20 +162,20 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         }
         
         try {
-          Log.d("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 시작")
-          val formattedReceipt = LogicReceiptProcessor.formatOrderReceipt(
-            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
+          Log.d("BridgeFlutterPlugin", "단일 주문 영수증 출력 시작")
+          val formattedReceipt = LogicReceiptProcessor.formatSingleOrderReceipt(
+            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
           )
           Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")
           LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)
           result.success(true)
         } catch (e: Exception) {
-          Log.e("BridgeFlutterPlugin", "구조화된 주문 영수증 출력 실패", e)
+          Log.e("BridgeFlutterPlugin", "단일 주문 영수증 출력 실패", e)
           result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
-      "printCumulativeOrderReceipt" -> {
+      "printTotalOrder" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
         val storeName = call.argument<String>("storeName")
         val storeAddress = call.argument<String>("storeAddress")
@@ -189,9 +190,9 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
           return
         }
         
-        Log.d("BridgeFlutterPlugin", "전달받은 누적 주문 데이터: $orderData")
+        Log.d("BridgeFlutterPlugin", "전달받은 전체 주문 데이터: $orderData")
         Log.d("BridgeFlutterPlugin", "매장 정보 - 이름: $storeName, 주소: $storeAddress, 전화: $phoneNumber")
-        Log.d("BridgeFlutterPlugin", "Android printCumulativeOrderReceipt 호출 - 매장명: $storeName, 언어: $language, 화폐: $currency")
+        Log.d("BridgeFlutterPlugin", "Android printTotalOrder 호출 - 매장명: $storeName, 언어: $language, 화폐: $currency")
         
         val stream = outputStream
         if (stream == null) {
@@ -200,16 +201,16 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         }
         
         try {
-          Log.d("BridgeFlutterPlugin", "누적 주문 영수증 출력 시작")
-          val formattedReceipt = LogicReceiptProcessor.formatCumulativeOrderReceipt(
+          Log.d("BridgeFlutterPlugin", "전체 주문 영수증 출력 시작")
+          val formattedReceipt = LogicReceiptProcessor.formatTotalOrderReceipt(
             orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
           )
-          Log.d("BridgeFlutterPlugin", "생성된 누적 영수증 포맷: \n$formattedReceipt")
-          Log.d("BridgeFlutterPlugin", "누적 영수증 포맷 길이: ${formattedReceipt.length}")
+          Log.d("BridgeFlutterPlugin", "생성된 전체 영수증 포맷: \n$formattedReceipt")
+          Log.d("BridgeFlutterPlugin", "전체 영수증 포맷 길이: ${formattedReceipt.length}")
           LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)
           result.success(true)
         } catch (e: Exception) {
-          Log.e("BridgeFlutterPlugin", "누적 주문 영수증 출력 실패", e)
+          Log.e("BridgeFlutterPlugin", "전체 주문 영수증 출력 실패", e)
           result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }

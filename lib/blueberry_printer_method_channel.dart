@@ -53,7 +53,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   }
 
   @override
-  Future<bool> printOrderReceipt(
+  Future<bool> printSingleOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -62,23 +62,25 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     String? thankYouMessage,
     String language = 'kor',
     String currency = 'KRW',
+    bool showStoreLabel = true,
   }) async {
-    print(' [DEBUG] MethodChannel: printOrderReceipt 호출 시작');
+    print(' [DEBUG] MethodChannel: printSingleOrder 호출 시작');
     print(' [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
     print(' [DEBUG] MethodChannel: 매장명: $storeName');
-  
-    // 파라미터의 쉼표를 일본 쉼표로 변경하여 파싱 오류 방지
+    print(' [DEBUG] MethodChannel: 점포용 라벨 표시: $showStoreLabel');
+
+    // 파라미터의 쉬표를 일본 쉬표로 변경하여 파싱 오류 방지
     String sanitizedStoreName = storeName.replaceAll(',', '、');
     String? sanitizedStoreAddress = storeAddress?.replaceAll(',', '、');
     String? sanitizedPhoneNumber = phoneNumber?.replaceAll(',', '、');
     String? sanitizedBusinessNumber = businessNumber?.replaceAll(',', '、');
     String? sanitizedThankYouMessage = thankYouMessage?.replaceAll(',', '、');
-  
-    print(' [DEBUG] MethodChannel: 쉼표 제거 후 - 매장명: $sanitizedStoreName');
-    print(' [DEBUG] MethodChannel: 쉼표 제거 후 - 주소: $sanitizedStoreAddress');
-  
+
+    print(' [DEBUG] MethodChannel: 쉬표 제거 후 - 매장명: $sanitizedStoreName');
+    print(' [DEBUG] MethodChannel: 쉬표 제거 후 - 주소: $sanitizedStoreAddress');
+
     try {
-      final bool result = await methodChannel.invokeMethod('printOrderReceipt', {
+      final bool result = await methodChannel.invokeMethod('printSingleOrder', {
         'orderData': orderData.toJson(),
         'storeName': sanitizedStoreName,
         'storeAddress': sanitizedStoreAddress,
@@ -87,6 +89,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
         'thankYouMessage': sanitizedThankYouMessage,
         'language': language,
         'currency': currency,
+        'showStoreLabel': showStoreLabel,
       });
       print(' [DEBUG] MethodChannel: 성공 결과: $result');
       return result;
@@ -97,7 +100,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   }
 
   @override
-  Future<bool> printCumulativeOrderReceipt(
+  Future<bool> printTotalOrder(
     OrderDetailResponse orderData, {
     required String storeName,
     String? storeAddress,
@@ -107,7 +110,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     String language = 'kor',
     String currency = 'KRW',
   }) async {
-    print(' [DEBUG] MethodChannel: printCumulativeOrderReceipt 호출 시작');
+    print(' [DEBUG] MethodChannel: printTotalOrder 호출 시작');
     print(' [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
     print(' [DEBUG] MethodChannel: 매장명: $storeName');
     print(' [DEBUG] MethodChannel: 주문 버전 수: ${orderData.orderVersion.length}');
@@ -123,7 +126,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     print(' [DEBUG] MethodChannel: 쉬표 제거 후 - 주소: $sanitizedStoreAddress');
   
     try {
-      final bool result = await methodChannel.invokeMethod('printCumulativeOrderReceipt', {
+      final bool result = await methodChannel.invokeMethod('printTotalOrder', {
         'orderData': orderData.toJson(),
         'storeName': sanitizedStoreName,
         'storeAddress': sanitizedStoreAddress,

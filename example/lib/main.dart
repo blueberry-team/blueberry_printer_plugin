@@ -400,9 +400,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       );
 
-      print(' [DEBUG] 네이티브 함수 호출 전: printOrderReceipt');
+      print(' [DEBUG] 네이티브 함수 호출 전: printSingleOrder');
       print(' [DEBUG] 전달할 데이터: ${sampleOrderData.toJson()}');
-      final success = await _blueberryPrinterPlugin.printOrderReceipt(
+      final success = await _blueberryPrinterPlugin.printSingleOrder(
         sampleOrderData,
         storeName: 'JungWoo Cafe',
         storeAddress: '123 JungWoo Street, Seoul',
@@ -550,8 +550,8 @@ class _MyHomePageState extends State<MyHomePage> {
       
       print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 버전 수: ${cumulativeOrderData.orderVersion.length}');
       
-      // 누적 주문 영수증 출력
-      bool success = await _blueberryPrinterPlugin.printCumulativeOrderReceipt(
+      // 전체 주문 영수증 출력
+      bool success = await _blueberryPrinterPlugin.printTotalOrder(
         cumulativeOrderData,
         storeName: '카페 블루베리',
         storeAddress: '서울특별시 강남구 테헤란로 123',
@@ -745,7 +745,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: _printOrderReceipt,
                               icon: const Icon(Icons.receipt_long),
-                              label: const Text('구조화된 주문 영수증'),
+                              label: const Text('단일 주문 영수증 (점포용)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.purple,
                                 foregroundColor: Colors.white,
@@ -758,7 +758,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: _printCumulativeOrderReceipt,
                               icon: const Icon(Icons.layers),
-                              label: const Text('누적 주문 영수증 (모든 버전)'),
+                              label: const Text('전체 주문 영수증 (모든 버전)'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.orange,
                                 foregroundColor: Colors.white,

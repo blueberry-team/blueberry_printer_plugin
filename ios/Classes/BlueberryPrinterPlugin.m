@@ -73,11 +73,12 @@
     else if ([@"printSampleReceipt" isEqualToString:call.method]) {
         [self printSampleReceipt:result];
     }
-    else if ([@"printOrderReceipt" isEqualToString:call.method]) {
+    else if ([@"printSingleOrder" isEqualToString:call.method]) {
         NSDictionary* args = call.arguments;
         NSDictionary* orderData = args[@"orderData"];
         NSString* storeName = args[@"storeName"];
         NSString* language = args[@"language"] ?: @"kor";
+        NSNumber* showStoreLabel = args[@"showStoreLabel"] ?: @YES;
         if (!orderData || !storeName) {
             NSLog(@"🔍 [DEBUG] 출력 실패: 주문 데이터 또는 매장명 없음");
             result([FlutterError errorWithCode:@"NO_DATA" 
@@ -86,11 +87,11 @@
             return;
         }
         NSLog(@"🔍 [DEBUG] iOS에서 받은 인자: %@", args);
-        printf("🔍 [DEBUG] iOS printOrderReceipt 호출 시작\n");
+        printf("🔍 [DEBUG] iOS printSingleOrder 호출 시작\n");
         fflush(stdout);
-        [self printOrderReceipt:args result:result];
+        [self printSingleOrder:args result:result];
     }
-    else if ([@"printCumulativeOrderReceipt" isEqualToString:call.method]) {
+    else if ([@"printTotalOrder" isEqualToString:call.method]) {
         NSDictionary* args = call.arguments;
         NSDictionary* orderData = args[@"orderData"];
         NSString* storeName = args[@"storeName"];
@@ -103,9 +104,9 @@
             return;
         }
         NSLog(@"🔍 [DEBUG] iOS에서 받은 누적 주문 인자: %@", args);
-        printf("🔍 [DEBUG] iOS printCumulativeOrderReceipt 호출 시작\n");
+        printf("🔍 [DEBUG] iOS printTotalOrder 호출 시작\n");
         fflush(stdout);
-        [self printCumulativeOrderReceipt:args result:result];
+        [self printTotalOrder:args result:result];
     }
     else if ([@"disconnect" isEqualToString:call.method]) {
         [self disconnect:result];
@@ -269,9 +270,9 @@
     [self printReceipt:sampleText result:result];
 }
 
-- (void)printOrderReceipt:(NSDictionary*)arguments result:(FlutterResult)result {
-    NSLog(@"🔍 [DEBUG] 구조화된 주문 영수증 출력 시도");
-    printf("🔍 [DEBUG] iOS printOrderReceipt 메서드 시작\n");
+- (void)printSingleOrder:(NSDictionary*)arguments result:(FlutterResult)result {
+    NSLog(@"🔍 [DEBUG] 단일 주문 영수증 출력 시도");
+    printf("🔍 [DEBUG] iOS printSingleOrder 메서드 시작\n");
     fflush(stdout);
     
     // 인자에서 데이터 추출 (에러 처리에서도 사용하기 위해 @try 밖에 선언)
@@ -301,6 +302,7 @@
             if ([key isEqualToString:@"business_number"]) return @"Business No";
             if ([key isEqualToString:@"no_order_number"]) return @"No order number";
             if ([key isEqualToString:@"no_table_info"]) return @"No table info";
+            if ([key isEqualToString:@"store_label"]) return @"FOR STORE";
         } else if ([language isEqualToString:@"jpn"]) {
             if ([key isEqualToString:@"store_info"]) return @"店舗情報";
             if ([key isEqualToString:@"order_info"]) return @"注文情報";
@@ -316,6 +318,7 @@
             if ([key isEqualToString:@"business_number"]) return @"事業者番号";
             if ([key isEqualToString:@"no_order_number"]) return @"注文番号なし";
             if ([key isEqualToString:@"no_table_info"]) return @"テーブル情報なし";
+            if ([key isEqualToString:@"store_label"]) return @"店舗用";
         } else { // kor (기본값)
             if ([key isEqualToString:@"store_info"]) return @"매장정보";
             if ([key isEqualToString:@"order_info"]) return @"주문정보";
@@ -331,6 +334,7 @@
             if ([key isEqualToString:@"business_number"]) return @"사업자등록번호";
             if ([key isEqualToString:@"no_order_number"]) return @"주문번호 없음";
             if ([key isEqualToString:@"no_table_info"]) return @"테이블 정보 없음";
+            if ([key isEqualToString:@"store_label"]) return @"점포용";
         }
         return key;
     };
@@ -348,6 +352,8 @@
         NSString* phoneNumber = arguments[@"phoneNumber"];
         NSString* businessNumber = arguments[@"businessNumber"];
         NSString* thankYouMessage = arguments[@"thankYouMessage"];
+        NSNumber* showStoreLabelNum = arguments[@"showStoreLabel"];
+        BOOL showStoreLabel = showStoreLabelNum ? [showStoreLabelNum boolValue] : YES;
         
         // 주문 기본 정보 추출
         NSString* orderNumber = orderData[@"orderNumber"] ?: getLocalizedText(@"no_order_number");
@@ -393,6 +399,14 @@
         // 영수증 포맷 생성
         NSMutableString* receiptText = [[NSMutableString alloc] init];
         
+        // 점포용 라벨 섹션 (요청 시에만 표시)
+        if (showStoreLabel) {
+            [receiptText appendString:@"점포용라벨, 24\n"];
+            [receiptText appendString:@"┌────────────────────┐\n"];
+            [receiptText appendFormat:@"│        %@        │\n", getLocalizedText(@"store_label")];
+            [receiptText appendString:@"└────────────────────┘\n\n"];
+        }
+        
         // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
         [receiptText appendString:@"타이틀, 80\n"];
         [receiptText appendFormat:@"%@\n\n", storeName];
@@ -428,16 +442,38 @@
                     for (NSDictionary* item in orderItems) {
                         NSString* menuName = item[@"menuName"] ?: @"상품명 없음";
                         NSNumber* quantityNum = item[@"quantity"];
-                        NSNumber* priceNum = item[@"price"];
+                        NSNumber* basePriceNum = item[@"price"];
                         NSInteger quantity = quantityNum ? [quantityNum integerValue] : 0;
-                        NSInteger price = priceNum ? [priceNum integerValue] : 0;
+                        NSInteger basePrice = basePriceNum ? [basePriceNum integerValue] : 0;
                         
-                        [receiptText appendFormat:@"%@ x%ld = %@%@\n", 
-                         menuName, (long)quantity, [self formatPrice:price], getCurrencySymbol()];
+                        // 메뉴 기본 가격 계산
+                        NSInteger menuTotalPrice = basePrice * quantity;
                         
-                        // 옵션 처리
+                        // 옵션 가격 계산
+                        NSInteger optionTotalPrice = 0;
                         NSArray* options = item[@"options"];
                         if (options && [options isKindOfClass:[NSArray class]]) {
+                            for (NSDictionary* option in options) {
+                                NSArray* selectedItems = option[@"selectedItems"];
+                                if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
+                                    for (NSDictionary* selectedItem in selectedItems) {
+                                        NSNumber* itemPriceNum = selectedItem[@"itemPrice"];
+                                        NSNumber* itemQuantityNum = selectedItem[@"quantity"];
+                                        NSInteger itemPrice = itemPriceNum ? [itemPriceNum integerValue] : 0;
+                                        NSInteger itemQuantity = itemQuantityNum ? [itemQuantityNum integerValue] : 0;
+                                        optionTotalPrice += (itemPrice * itemQuantity);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 최종 가격 = 메뉴가격 x 개수 + 옵션가격 합계
+                        NSInteger finalPrice = menuTotalPrice + optionTotalPrice;
+                        [receiptText appendFormat:@"%@ x%ld = %@%@\n", 
+                         menuName, (long)quantity, [self formatPrice:finalPrice], getCurrencySymbol()];
+                        
+                        // 옵션 상세 표시 (옵션이 있는 경우에만, 가격 없이 옵션명만)
+                        if (optionTotalPrice > 0) {
                             for (NSDictionary* option in options) {
                                 NSArray* selectedItems = option[@"selectedItems"];
                                 if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
@@ -449,8 +485,11 @@
                                         NSInteger itemQuantity = itemQuantityNum ? [itemQuantityNum integerValue] : 0;
                                         
                                         if (itemPrice > 0) {
-                                            [receiptText appendFormat:@"  + %@ x%ld = %@%@\n", 
-                                             itemName, (long)itemQuantity, [self formatPrice:itemPrice], getCurrencySymbol()];
+                                            if (itemQuantity > 1) {
+                                                [receiptText appendFormat:@"  - %@ x%ld\n", itemName, (long)itemQuantity];
+                                            } else {
+                                                [receiptText appendFormat:@"  - %@\n", itemName];
+                                            }
                                         }
                                     }
                                 }
@@ -500,11 +539,11 @@
 }
 
 /**
- * 누적 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
+ * 전체 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
  */
-- (void)printCumulativeOrderReceipt:(NSDictionary*)arguments result:(FlutterResult)result {
-    NSLog(@"🔍 [DEBUG] 누적 주문 영수증 출력 시도");
-    printf("🔍 [DEBUG] iOS printCumulativeOrderReceipt 메서드 시작\n");
+- (void)printTotalOrder:(NSDictionary*)arguments result:(FlutterResult)result {
+    NSLog(@"🔍 [DEBUG] 전체 주문 영수증 출력 시도");
+    printf("🔍 [DEBUG] iOS printTotalOrder 메서드 시작\n");
     fflush(stdout);
     
     @try {
@@ -624,7 +663,7 @@
         // 누적 상품 목록 섹션 (모든 버전 합치기)
         [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"menu_list")];
         
-        // 모든 버전의 상품을 합치기 위한 Dictionary
+        // 모든 버전의 상품을 합치기 위한 Dictionary (메뉴명 + 옵션 조합을 기준으로)
         NSMutableDictionary* mergedItems = [NSMutableDictionary dictionary];
         
         // 모든 버전의 상품 수집
@@ -634,84 +673,93 @@
                 for (NSDictionary* item in orderItems) {
                     NSString* menuName = item[@"menuName"] ?: @"상품명 없음";
                     NSNumber* quantityNum = item[@"quantity"];
-                    NSNumber* priceNum = item[@"price"];
+                    NSNumber* basePriceNum = item[@"price"];
                     NSInteger quantity = quantityNum ? [quantityNum integerValue] : 0;
-                    NSInteger price = priceNum ? [priceNum integerValue] : 0;
+                    NSInteger basePrice = basePriceNum ? [basePriceNum integerValue] : 0;
                     
-                    // 메뉴 아이템 합치기
-                    if (mergedItems[menuName]) {
-                        NSMutableDictionary* existingItem = mergedItems[menuName];
-                        NSInteger existingQuantity = [existingItem[@"quantity"] integerValue];
-                        NSInteger existingTotalPrice = [existingItem[@"totalPrice"] integerValue];
-                        existingItem[@"quantity"] = @(existingQuantity + quantity);
-                        existingItem[@"totalPrice"] = @(existingTotalPrice + (price * quantity));
-                    } else {
-                        mergedItems[menuName] = [NSMutableDictionary dictionaryWithDictionary:@{
-                            @"quantity": @(quantity),
-                            @"unitPrice": @(price),
-                            @"totalPrice": @(price * quantity),
-                            @"options": [NSMutableDictionary dictionary]
-                        }];
-                    }
-                    
-                    // 옵션 처리 및 합치기
+                    // 옵션 정보를 포함한 고유 키 생성
                     NSArray* options = item[@"options"];
-                    NSMutableDictionary* mergedOptions = mergedItems[menuName][@"options"];
+                    NSMutableString* optionKey = [NSMutableString string];
+                    NSInteger optionTotalPrice = 0;
                     
                     if (options && [options isKindOfClass:[NSArray class]]) {
                         for (NSDictionary* option in options) {
                             NSArray* selectedItems = option[@"selectedItems"];
                             if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
                                 for (NSDictionary* selectedItem in selectedItems) {
-                                    NSString* optionName = selectedItem[@"itemName"] ?: @"옵션명 없음";
+                                    NSString* optionName = selectedItem[@"itemName"] ?: @"";
                                     NSNumber* optionPriceNum = selectedItem[@"itemPrice"];
                                     NSNumber* optionQuantityNum = selectedItem[@"quantity"];
                                     NSInteger optionPrice = optionPriceNum ? [optionPriceNum integerValue] : 0;
                                     NSInteger optionQuantity = optionQuantityNum ? [optionQuantityNum integerValue] : 0;
-                                    
                                     if (optionPrice > 0) {
-                                        if (mergedOptions[optionName]) {
-                                            NSMutableDictionary* existingOption = mergedOptions[optionName];
-                                            NSInteger existingQuantity = [existingOption[@"quantity"] integerValue];
-                                            NSInteger existingTotalPrice = [existingOption[@"totalPrice"] integerValue];
-                                            existingOption[@"quantity"] = @(existingQuantity + optionQuantity);
-                                            existingOption[@"totalPrice"] = @(existingTotalPrice + (optionPrice * optionQuantity));
-                                        } else {
-                                            mergedOptions[optionName] = [NSMutableDictionary dictionaryWithDictionary:@{
-                                                @"quantity": @(optionQuantity),
-                                                @"unitPrice": @(optionPrice),
-                                                @"totalPrice": @(optionPrice * optionQuantity)
-                                            }];
-                                        }
+                                        [optionKey appendFormat:@"|%@:%ld", optionName, (long)optionQuantity];
+                                        optionTotalPrice += (optionPrice * optionQuantity);
                                     }
                                 }
                             }
                         }
+                    }
+                    
+                    // 메뉴명 + 옵션 조합을 기준으로 한 고유 키
+                    NSString* uniqueKey = [NSString stringWithFormat:@"%@%@", menuName, optionKey];
+                    NSInteger totalItemPrice = (basePrice * quantity) + optionTotalPrice;
+                    
+                    // 메뉴 아이템 합치기 (동일한 메뉴 + 옵션 조합인 경우에만)
+                    if (mergedItems[uniqueKey]) {
+                        NSMutableDictionary* existingItem = mergedItems[uniqueKey];
+                        NSInteger existingQuantity = [existingItem[@"quantity"] integerValue];
+                        NSInteger existingTotalPrice = [existingItem[@"totalPrice"] integerValue];
+                        existingItem[@"quantity"] = @(existingQuantity + quantity);
+                        existingItem[@"totalPrice"] = @(existingTotalPrice + totalItemPrice);
+                    } else {
+                        mergedItems[uniqueKey] = [NSMutableDictionary dictionaryWithDictionary:@{
+                            @"menuName": menuName,
+                            @"quantity": @(quantity),
+                            @"basePrice": @(basePrice),
+                            @"totalPrice": @(totalItemPrice),
+                            @"options": options ?: @[]
+                        }];
                     }
                 }
             }
         }
         
         // 합쳐진 상품 출력
-        for (NSString* menuName in mergedItems) {
-            NSDictionary* itemData = mergedItems[menuName];
+        for (NSString* uniqueKey in mergedItems) {
+            NSDictionary* itemData = mergedItems[uniqueKey];
+            NSString* menuName = itemData[@"menuName"];
             NSInteger quantity = [itemData[@"quantity"] integerValue];
             NSInteger totalPrice = [itemData[@"totalPrice"] integerValue];
+            NSArray* options = itemData[@"options"];
+            
             grandTotalPrice += totalPrice;
             
             [receiptText appendFormat:@"%@ x%ld = %@%@\n", 
              menuName, (long)quantity, [self formatPrice:totalPrice], getCurrencySymbol()];
             
-            // 합쳐진 옵션 출력
-            NSDictionary* options = itemData[@"options"];
-            for (NSString* optionName in options) {
-                NSDictionary* optionData = options[optionName];
-                NSInteger optionQuantity = [optionData[@"quantity"] integerValue];
-                NSInteger optionTotalPrice = [optionData[@"totalPrice"] integerValue];
-                grandTotalPrice += optionTotalPrice;
-                
-                [receiptText appendFormat:@"  + %@ x%ld = %@%@\n", 
-                 optionName, (long)optionQuantity, [self formatPrice:optionTotalPrice], getCurrencySymbol()];
+            // 옵션 표시 (가격 없이 옵션명만)
+            if (options && [options isKindOfClass:[NSArray class]]) {
+                for (NSDictionary* option in options) {
+                    NSArray* selectedItems = option[@"selectedItems"];
+                    if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
+                        for (NSDictionary* selectedItem in selectedItems) {
+                            NSString* optionName = selectedItem[@"itemName"] ?: @"옵션명 없음";
+                            NSNumber* optionPriceNum = selectedItem[@"itemPrice"];
+                            NSNumber* optionQuantityNum = selectedItem[@"quantity"];
+                            NSInteger optionPrice = optionPriceNum ? [optionPriceNum integerValue] : 0;
+                            NSInteger optionQuantity = optionQuantityNum ? [optionQuantityNum integerValue] : 0;
+                            
+                            if (optionPrice > 0) {
+                                if (optionQuantity > 1) {
+                                    [receiptText appendFormat:@"  - %@ x%ld\n", optionName, (long)optionQuantity];
+                                } else {
+                                    [receiptText appendFormat:@"  - %@\n", optionName];
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         
