@@ -16,6 +16,7 @@ object LogicReceiptProcessor {
          * 단일 주문 데이터를 영수증 포맷으로 변환 (점포용)
          * @param orderData 주문 데이터
          * @param storeName 매장명
+         * @param tableNumber 테이블 번호 (선택사항)
          * @param storeAddress 매장 주소 (선택사항)
          * @param phoneNumber 전화번호 (선택사항)
          * @param businessNumber 사업자등록번호 (선택사항)
@@ -25,6 +26,7 @@ object LogicReceiptProcessor {
         fun formatSingleOrderReceipt(
             orderData: Map<String, Any>,
             storeName: String,
+            tableNumber: String? = null,
             storeAddress: String? = null,
             phoneNumber: String? = null,
             businessNumber: String? = null,
@@ -254,6 +256,7 @@ object LogicReceiptProcessor {
          * 전체 주문 데이터를 영수증 포맷으로 변환 (모든 주문 버전 포함)
          * @param orderData 주문 데이터 (모든 버전 포함)
          * @param storeName 매장명
+         * @param tableNumber 테이블 번호 (선택사항)
          * @param storeAddress 매장 주소 (선택사항)
          * @param phoneNumber 전화번호 (선택사항)
          * @param businessNumber 사업자등록번호 (선택사항)
@@ -262,6 +265,7 @@ object LogicReceiptProcessor {
         fun formatTotalOrderReceipt(
             orderData: Map<String, Any>,
             storeName: String,
+            tableNumber: String? = null,
             storeAddress: String? = null,
             phoneNumber: String? = null,
             businessNumber: String? = null,
@@ -736,14 +740,14 @@ object LogicReceiptProcessor {
                                 val content = contentLines.joinToString("\n")
                                 Log.d(TAG, "섹션 내용: '$content'")
                                 
-                                // 섹션별 기본 설정
+                                // 섹션별 기본 설정 - 폰트 크기 조정
                                 val sectionSettings = mapOf(
-                                    "타이틀" to Triple(true, RenderKoreanTextToImage.TextAlign.CENTER, 24f),
-                                    "매장정보" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 16f),
-                                    "구분선" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 14f),
-                                    "상품목록" to Triple(false, RenderKoreanTextToImage.TextAlign.LEFT, 14f),
-                                    "합계" to Triple(true, RenderKoreanTextToImage.TextAlign.RIGHT, 16f),
-                                    "감사메시지" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 16f)
+                                    "타이틀" to Triple(true, RenderKoreanTextToImage.TextAlign.CENTER, 20f), // 타이틀 폰트 축소 (24f -> 20f)
+                                    "매장정보" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 18f), // 폰트 크기 증가 (16f -> 18f)
+                                    "구분선" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 16f), // 폰트 크기 증가 (14f -> 16f)
+                                    "상품목록" to Triple(false, RenderKoreanTextToImage.TextAlign.LEFT, 16f), // 폰트 크기 증가 (14f -> 16f)
+                                    "합계" to Triple(true, RenderKoreanTextToImage.TextAlign.RIGHT, 18f), // 폰트 크기 증가 (16f -> 18f)
+                                    "감사메시지" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 18f) // 폰트 크기 증가 (16f -> 18f)
                                 )
                                 val settings = sectionSettings[sectionName] ?: Triple(false, RenderKoreanTextToImage.TextAlign.LEFT, textSize)
                                 val (isBold, align, _) = settings

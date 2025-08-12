@@ -348,6 +348,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final success = await _blueberryPrinterPlugin.printSingleOrder(
         sampleOrderData,
         storeName: 'JungWoo Cafe',
+        tableNumber: 'T-25', // 테이블 번호 추가 (주문 데이터의 테이블명을 덮어씀)
         storeAddress: '123 JungWoo Street, Seoul',
         phoneNumber: '02-8513-6357',
         businessNumber: '333-33-3333',
@@ -394,6 +395,7 @@ class _MyHomePageState extends State<MyHomePage> {
       bool success = await _blueberryPrinterPlugin.printTotalOrder(
         cumulativeOrderData, // OrderHistoryTotalResponse 객체 그대로 사용
         storeName: '카페 블루베리',
+        tableNumber: 'VIP-7', // 테이블 번호 추가 (주문 데이터의 테이블명을 덮어씀)
         storeAddress: '서울특별시 강남구 테헤란로 123',
         phoneNumber: '02-1234-5678',
         businessNumber: '123-45-67890',

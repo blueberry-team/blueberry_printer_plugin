@@ -79,6 +79,7 @@
         NSString* storeName = args[@"storeName"];
         NSString* language = args[@"language"] ?: @"kor";
         NSNumber* showStoreLabel = args[@"showStoreLabel"] ?: @YES;
+        NSString* tableNumber = args[@"tableNumber"];
         if (!orderData || !storeName) {
             NSLog(@"🔍 [DEBUG] 출력 실패: 주문 데이터 또는 매장명 없음");
             result([FlutterError errorWithCode:@"NO_DATA" 
@@ -96,6 +97,7 @@
         NSDictionary* orderData = args[@"orderData"];
         NSString* storeName = args[@"storeName"];
         NSString* language = args[@"language"] ?: @"kor";
+        NSString* tableNumber = args[@"tableNumber"];
         if (!orderData || !storeName) {
             NSLog(@"🔍 [DEBUG] 출력 실패: 주문 데이터 또는 매장명 없음");
             result([FlutterError errorWithCode:@"NO_DATA" 
@@ -280,6 +282,7 @@
     NSString* storeName = arguments[@"storeName"] ?: @"매장명 없음";
     NSString* language = arguments[@"language"] ?: @"kor";
     NSString* currency = arguments[@"currency"] ?: @"KRW";
+    NSString* tableNumber = arguments[@"tableNumber"];
     
     NSLog(@"🔍 [DEBUG] iOS 매장명: %@, 언어: %@", storeName, language);
     printf("🔍 [DEBUG] iOS 매장명: %s, 언어: %s\n", [storeName UTF8String], [language UTF8String]);
@@ -407,12 +410,12 @@
             [receiptText appendString:@"└────────────────────┘\n\n"];
         }
         
-        // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
-        [receiptText appendString:@"타이틀, 80\n"];
+        // 타이틀 섹션 (커스텀 영수증과 동일한 포맷, 타이틀 폰트 크기 축소: 80->60)
+        [receiptText appendString:@"타이틀, 60\n"];
         [receiptText appendFormat:@"%@\n\n", storeName];
         
-        // 매장정보 섹션
-        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"store_info")];
+        // 매장정보 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendFormat:@"%@, 22\n", getLocalizedText(@"store_info")];
         if (storeAddress) {
             [receiptText appendFormat:@"%@\n", storeAddress];
         }
@@ -424,8 +427,8 @@
         }
         [receiptText appendString:@"\n"];
         
-        // 구분선 섹션
-        [receiptText appendString:@"구분선, 20\n"];
+        // 구분선 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendString:@"구분선, 22\n"];
         [receiptText appendString:@"================================\n\n"];
         
         // 주문 정보 섹션
@@ -433,8 +436,8 @@
         [receiptText appendFormat:@"%@: %@\n", getLocalizedText(@"order_number"), orderNumber];
         [receiptText appendFormat:@"%@: %@\n\n", getLocalizedText(@"table"), tableName];
         
-        // 상품 목록 섹션
-        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"menu_list")];
+        // 상품 목록 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendFormat:@"%@, 22\n", getLocalizedText(@"menu_list")];
         if (orderVersions && [orderVersions isKindOfClass:[NSArray class]]) {
             for (NSDictionary* version in orderVersions) {
                 NSArray* orderItems = version[@"orderItems"];
@@ -504,8 +507,8 @@
         // 줄바꿈 명령
         [receiptText appendString:@"줄바꿈, 2\n\n"];
         
-        // 합계 섹션
-        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"total")];
+        // 합계 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendFormat:@"%@, 22\n", getLocalizedText(@"total")];
         [receiptText appendFormat:@"%@: %@%@\n\n", getLocalizedText(@"total"), [self formatPrice:calculatedTotalPrice], getCurrencySymbol()];
         
         // 줄바꿈 명령
@@ -555,6 +558,7 @@
         NSString* thankYouMessage = arguments[@"thankYouMessage"];
         NSString* language = arguments[@"language"] ?: @"kor";
         NSString* currency = arguments[@"currency"] ?: @"KRW";
+        NSString* tableNumber = arguments[@"tableNumber"];
         
         NSLog(@"🔍 [DEBUG] iOS 매장명: %@, 언어: %@", storeName, language);
         printf("🔍 [DEBUG] iOS 매장명: %s, 언어: %s\n", [storeName UTF8String], [language UTF8String]);
@@ -624,7 +628,8 @@
         
         // 주문 기본 정보
         NSString* orderNumber = orderData[@"orderId"] ?: orderData[@"orderNumber"] ?: getLocalizedText(@"no_order_number");
-        NSString* tableName = orderData[@"tableName"] ?: getLocalizedText(@"no_table_info");
+        // 테이블 번호 처리 - 파라미터로 받은 값이 있으면 우선 사용하고, 없으면 주문 데이터의 테이블명 사용
+        NSString* tableName = tableNumber ? tableNumber : (orderData[@"tableName"] ?: getLocalizedText(@"no_table_info"));
         
         // 모든 버전의 주문 데이터에서 총 금액 자동 계산
         NSInteger grandTotalPrice = 0;
@@ -652,12 +657,12 @@
         
         NSMutableString* receiptText = [[NSMutableString alloc] init];
         
-        // 타이틀 섹션 (커스텀 영수증과 동일한 포맷)
-        [receiptText appendFormat:@"타이틀, 80\n"];
+        // 타이틀 섹션 (커스텀 영수증과 동일한 포맷, 타이틀 폰트 크기 축소: 80->60)
+        [receiptText appendFormat:@"타이틀, 60\n"];
         [receiptText appendFormat:@"%@\n\n", storeName];
         
-        // 매장정보 섹션
-        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"store_info")];
+        // 매장정보 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendFormat:@"%@, 22\n", getLocalizedText(@"store_info")];
         if (storeAddress) {
             [receiptText appendFormat:@"%@\n", storeAddress];
         }
@@ -669,8 +674,8 @@
         }
         [receiptText appendString:@"\n"];
         
-        // 구분선 섹션
-        [receiptText appendFormat:@"구분선, 20\n"];
+        // 구분선 섹션 (폰트 크기 증가: 20->22)
+        [receiptText appendFormat:@"구분선, 22\n"];
         [receiptText appendString:@"================================\n\n"];
         
         // 주문 정보 섹션
@@ -849,7 +854,7 @@
         [receiptText appendString:@"줄바꿈, 2\n\n"];
         
         // 총 합계 섹션
-        [receiptText appendFormat:@"%@, 20\n", getLocalizedText(@"grand_total")];
+        [receiptText appendFormat:@"%@, 22\n", getLocalizedText(@"grand_total")];
         [receiptText appendFormat:@"%@: %@%@\n\n", getLocalizedText(@"grand_total"), [self formatPrice:grandTotalPrice], getCurrencySymbol()];
         
         // 줄바꿈 명령

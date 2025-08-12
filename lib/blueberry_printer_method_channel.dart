@@ -57,6 +57,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   Future<bool> printSingleOrder(
     OrderDetailResponse orderData, {
     required String storeName,
+    String? tableNumber,
     String? storeAddress,
     String? phoneNumber,
     String? businessNumber,
@@ -84,6 +85,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
       final bool result = await methodChannel.invokeMethod('printSingleOrder', {
         'orderData': orderData.toJson(),
         'storeName': sanitizedStoreName,
+        'tableNumber': tableNumber,
         'storeAddress': sanitizedStoreAddress,
         'phoneNumber': sanitizedPhoneNumber,
         'businessNumber': sanitizedBusinessNumber,
@@ -104,6 +106,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   Future<bool> printTotalOrder(
     OrderHistoryTotalResponse orderData, {
     required String storeName,
+    String? tableNumber,
     String? storeAddress,
     String? phoneNumber,
     String? businessNumber,
@@ -130,6 +133,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
       final bool result = await methodChannel.invokeMethod('printTotalOrder', {
         'orderData': orderData.toJson(),
         'storeName': sanitizedStoreName,
+        'tableNumber': tableNumber,
         'storeAddress': sanitizedStoreAddress,
         'phoneNumber': sanitizedPhoneNumber,
         'businessNumber': sanitizedBusinessNumber,

@@ -52,6 +52,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// 단일 주문 데이터로 영수증 출력 (점포용)
   /// [orderData] 주문 데이터
   /// [storeName] 매장명
+  /// [tableNumber] 테이블 번호 (선택사항)
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
@@ -60,6 +61,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   Future<bool> printSingleOrder(
     OrderDetailResponse orderData, {
     required String storeName,
+    String? tableNumber,
     String? storeAddress,
     String? phoneNumber,
     String? businessNumber,
@@ -74,6 +76,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// 전체 주문 데이터로 영수증 출력 (모든 주문 버전 포함)
   /// [orderData] 주문 데이터 (모든 버전 포함)
   /// [storeName] 매장명
+  /// [tableNumber] 테이블 번호 (선택사항)
   /// [storeAddress] 매장 주소 (선택사항)
   /// [phoneNumber] 전화번호 (선택사항)
   /// [businessNumber] 사업자등록번호 (선택사항)
@@ -81,6 +84,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   Future<bool> printTotalOrder(
     OrderHistoryTotalResponse orderData, {
     required String storeName,
+    String? tableNumber,
     String? storeAddress,
     String? phoneNumber,
     String? businessNumber,
