@@ -2,6 +2,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'blueberry_printer_method_channel.dart';
 import 'models/order_detail_response.dart';
+import 'models/order_history_total_response.dart';
 
 abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// Constructs a BlueberryPrinterPlatform.
@@ -78,7 +79,7 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
   Future<bool> printTotalOrder(
-    OrderDetailResponse orderData, {
+    OrderHistoryTotalResponse orderData, {
     required String storeName,
     String? storeAddress,
     String? phoneNumber,

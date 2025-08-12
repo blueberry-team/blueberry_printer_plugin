@@ -345,7 +345,24 @@ object LogicReceiptProcessor {
                 
                 // 모든 버전의 주문 데이터에서 총 금액 자동 계산
                 var grandTotalPrice = 0
-                val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
+                
+                // orderVersion이 없고 orderMenus가 있는 경우(Flutter 모델 구조)
+                var orderVersions = orderData["orderVersion"] as? List<Map<String, Any>>
+                if (orderVersions == null && orderData.containsKey("orderMenus")) {
+                    Log.d(TAG, "Flutter 모델 구조 감지: orderMenus 필드 처리 중")
+                    val orderMenus = orderData["orderMenus"] as? List<Map<String, Any>> ?: emptyList()
+                    
+                    // orderMenus를 orderItems로 변환하여 orderVersion 생성
+                    val orderItems = mutableListOf<Map<String, Any>>()
+                    for (menu in orderMenus) {
+                        orderItems.add(menu)
+                    }
+                    
+                    // 단일 버전 orderVersion 생성
+                    orderVersions = listOf(mapOf("orderItems" to orderItems))
+                } else if (orderVersions == null) {
+                    orderVersions = emptyList()
+                }
                 
                 Log.d(TAG, "누적 주문 처리 시작 - 버전 수: ${orderVersions.size}")
                 
@@ -391,16 +408,35 @@ object LogicReceiptProcessor {
                         val basePrice = item["price"] as? Int ?: 0
                         
                         // 옵션 정보를 포함한 고유 키 생성
-                        val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
+                        // Flutter 모델에서는 menuOptionItems 필드를 사용하고 네이티브에서는 options 필드를 사용함
+                        val options = when {
+                            item.containsKey("options") -> item["options"] as? List<Map<String, Any>>
+                            item.containsKey("menuOptionItems") -> item["menuOptionItems"] as? List<Map<String, Any>>
+                            else -> null
+                        } ?: emptyList()
+                        
+                        Log.d(TAG, "옵션 처리: 메뉴=$menuName, 옵션 개수=${options.size}")
                         val optionKey = StringBuilder()
                         var optionTotalPrice = 0
                         
                         for (option in options) {
                             val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                             for (selectedItem in selectedItems) {
-                                val optionName = selectedItem["itemName"] as? String ?: ""
-                                val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
-                                val optionQuantity = selectedItem["quantity"] as? Int ?: 0
+                                // Flutter 모델과 네이티브 코드 필드명 차이 처리
+                                val optionName = selectedItem["itemName"] as? String 
+                                    ?: selectedItem["menuOptionItemDetailName"] as? String 
+                                    ?: ""
+                                
+                                val optionPrice = selectedItem["itemPrice"] as? Int 
+                                    ?: selectedItem["menuOptionItemDetailPrice"] as? Int 
+                                    ?: 0
+                                
+                                val optionQuantity = selectedItem["quantity"] as? Int 
+                                    ?: selectedItem["menuOptionItemDetailQuantity"] as? Int 
+                                    ?: 0
+                                
+                                Log.d(TAG, "옵션 값 처리: 메뉴=$menuName, 옵션=$optionName, 가격=$optionPrice, 수량=$optionQuantity")
+                                
                                 if (optionPrice > 0) {
                                     optionKey.append("|$optionName:$optionQuantity")
                                     optionTotalPrice += (optionPrice * optionQuantity)
@@ -444,9 +480,20 @@ object LogicReceiptProcessor {
                     for (option in options) {
                         val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                         for (selectedItem in selectedItems) {
-                            val optionName = selectedItem["itemName"] as? String ?: "옵션명 없음"
-                            val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
-                            val optionQuantity = selectedItem["quantity"] as? Int ?: 0
+                            // Flutter 모델과 네이티브 코드 필드명 차이 처리
+                            val optionName = selectedItem["itemName"] as? String 
+                                ?: selectedItem["menuOptionItemDetailName"] as? String 
+                                ?: "옵션명 없음"
+                            
+                            val optionPrice = selectedItem["itemPrice"] as? Int 
+                                ?: selectedItem["menuOptionItemDetailPrice"] as? Int 
+                                ?: 0
+                            
+                            val optionQuantity = selectedItem["quantity"] as? Int 
+                                ?: selectedItem["menuOptionItemDetailQuantity"] as? Int 
+                                ?: 0
+                            
+                            Log.d(TAG, "옵션 출력: 메뉴=$menuName, 옵션=$optionName, 가격=$optionPrice, 수량=$optionQuantity")
                             
                             if (optionPrice > 0) {
                                 if (optionQuantity > 1) {

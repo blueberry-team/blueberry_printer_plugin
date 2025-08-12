@@ -7,6 +7,7 @@
 
 import 'blueberry_printer_platform_interface.dart';
 import 'models/order_detail_response.dart';
+import 'models/order_history_total_response.dart';
 
 class BlueberryPrinter {
   Future<String?> getPlatformVersion() {
@@ -73,7 +74,7 @@ class BlueberryPrinter {
   /// [businessNumber] 사업자등록번호 (선택사항)
   /// [thankYouMessage] 감사 메시지 (선택사항)
   Future<bool> printTotalOrder(
-    OrderDetailResponse orderData, {
+    OrderHistoryTotalResponse orderData, {
     required String storeName,
     String? storeAddress,
     String? phoneNumber,

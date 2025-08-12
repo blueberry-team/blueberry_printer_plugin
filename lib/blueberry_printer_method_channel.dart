@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'blueberry_printer_platform_interface.dart';
 import 'models/order_detail_response.dart';
+import 'models/order_history_total_response.dart';
 
 /// An implementation of [BlueberryPrinterPlatform] that uses method channels.
 class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
@@ -101,7 +102,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
 
   @override
   Future<bool> printTotalOrder(
-    OrderDetailResponse orderData, {
+    OrderHistoryTotalResponse orderData, {
     required String storeName,
     String? storeAddress,
     String? phoneNumber,
@@ -113,7 +114,7 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
     print(' [DEBUG] MethodChannel: printTotalOrder 호출 시작');
     print(' [DEBUG] MethodChannel: 전달할 JSON 데이터: ${orderData.toJson()}');
     print(' [DEBUG] MethodChannel: 매장명: $storeName');
-    print(' [DEBUG] MethodChannel: 주문 버전 수: ${orderData.orderVersion.length}');
+    print(' [DEBUG] MethodChannel: 주문 ID: ${orderData.orderId}');
   
     // 파라미터의 쉬표를 일본 쉬표로 변경하여 파싱 오류 방지
     String sanitizedStoreName = storeName.replaceAll(',', '、');

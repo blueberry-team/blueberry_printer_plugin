@@ -623,12 +623,30 @@
         };
         
         // 주문 기본 정보
-        NSString* orderNumber = orderData[@"orderNumber"] ?: getLocalizedText(@"no_order_number");
+        NSString* orderNumber = orderData[@"orderId"] ?: orderData[@"orderNumber"] ?: getLocalizedText(@"no_order_number");
         NSString* tableName = orderData[@"tableName"] ?: getLocalizedText(@"no_table_info");
         
         // 모든 버전의 주문 데이터에서 총 금액 자동 계산
         NSInteger grandTotalPrice = 0;
+        
+        // Flutter의 OrderHistoryTotalResponse 모델과 호환되도록 수정
+        // orderVersion을 먼저 확인하고, 없으면 orderMenus를 처리
         NSArray* orderVersions = orderData[@"orderVersion"];
+        NSArray* orderItems = nil;
+        
+        // orderVersion이 없고 orderMenus가 있는 경우 (Flutter 모델 구조)
+        if (!orderVersions && orderData[@"orderMenus"]) {
+            NSArray* orderMenus = orderData[@"orderMenus"];
+            
+            // orderMenus를 orderItems 형태로 변환
+            orderItems = [NSMutableArray array];
+            for (NSDictionary* menu in orderMenus) {
+                [(NSMutableArray*)orderItems addObject:menu];
+            }
+            
+            // 가상의 orderVersion 생성
+            orderVersions = @[@{@"orderItems": orderItems}];
+        }
         
         NSLog(@"🔍 [DEBUG] 누적 주문 처리 시작 - 버전 수: %lu", (unsigned long)orderVersions.count);
         
@@ -678,7 +696,14 @@
                     NSInteger basePrice = basePriceNum ? [basePriceNum integerValue] : 0;
                     
                     // 옵션 정보를 포함한 고유 키 생성
-                    NSArray* options = item[@"options"];
+                    // Flutter 모델은 menuOptionItems를 사용, 네이티브 코드는 options 사용
+                    NSArray* options = nil;
+                    if (item[@"options"]) {
+                        options = item[@"options"];
+                    } else if (item[@"menuOptionItems"]) {
+                        options = item[@"menuOptionItems"];
+                        NSLog(@"플러터 모델 menuOptionItems 감지: %@", menuName);
+                    }
                     NSMutableString* optionKey = [NSMutableString string];
                     NSInteger optionTotalPrice = 0;
                     
@@ -687,11 +712,39 @@
                             NSArray* selectedItems = option[@"selectedItems"];
                             if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
                                 for (NSDictionary* selectedItem in selectedItems) {
-                                    NSString* optionName = selectedItem[@"itemName"] ?: @"";
-                                    NSNumber* optionPriceNum = selectedItem[@"itemPrice"];
-                                    NSNumber* optionQuantityNum = selectedItem[@"quantity"];
+                                    // Flutter 모델과 네이티브 코드 필드명 차이 처리
+                                    NSString* optionName = nil;
+                                    NSNumber* optionPriceNum = nil;
+                                    NSNumber* optionQuantityNum = nil;
+                                    
+                                    // 옵션 이름 처리
+                                    if (selectedItem[@"itemName"]) {
+                                        optionName = selectedItem[@"itemName"];
+                                    } else if (selectedItem[@"menuOptionItemDetailName"]) {
+                                        optionName = selectedItem[@"menuOptionItemDetailName"];
+                                    } else {
+                                        optionName = @"";
+                                    }
+                                    
+                                    // 옵션 가격 처리
+                                    if (selectedItem[@"itemPrice"]) {
+                                        optionPriceNum = selectedItem[@"itemPrice"];
+                                    } else if (selectedItem[@"menuOptionItemDetailPrice"]) {
+                                        optionPriceNum = selectedItem[@"menuOptionItemDetailPrice"];
+                                    }
+                                    
+                                    // 옵션 수량 처리
+                                    if (selectedItem[@"quantity"]) {
+                                        optionQuantityNum = selectedItem[@"quantity"];
+                                    } else if (selectedItem[@"menuOptionItemDetailQuantity"]) {
+                                        optionQuantityNum = selectedItem[@"menuOptionItemDetailQuantity"];
+                                    }
+                                    
                                     NSInteger optionPrice = optionPriceNum ? [optionPriceNum integerValue] : 0;
                                     NSInteger optionQuantity = optionQuantityNum ? [optionQuantityNum integerValue] : 0;
+                                    
+                                    NSLog(@"옵션 값 처리: 메뉴=%@, 옵션=%@, 가격=%ld, 수량=%ld", menuName, optionName, (long)optionPrice, (long)optionQuantity);
+                                    
                                     if (optionPrice > 0) {
                                         [optionKey appendFormat:@"|%@:%ld", optionName, (long)optionQuantity];
                                         optionTotalPrice += (optionPrice * optionQuantity);
@@ -744,11 +797,38 @@
                     NSArray* selectedItems = option[@"selectedItems"];
                     if (selectedItems && [selectedItems isKindOfClass:[NSArray class]]) {
                         for (NSDictionary* selectedItem in selectedItems) {
-                            NSString* optionName = selectedItem[@"itemName"] ?: @"옵션명 없음";
-                            NSNumber* optionPriceNum = selectedItem[@"itemPrice"];
-                            NSNumber* optionQuantityNum = selectedItem[@"quantity"];
+                            // Flutter 모델과 네이티브 코드 필드명 차이 처리
+                            NSString* optionName = nil;
+                            NSNumber* optionPriceNum = nil;
+                            NSNumber* optionQuantityNum = nil;
+                            
+                            // 옵션 이름 처리
+                            if (selectedItem[@"itemName"]) {
+                                optionName = selectedItem[@"itemName"];
+                            } else if (selectedItem[@"menuOptionItemDetailName"]) {
+                                optionName = selectedItem[@"menuOptionItemDetailName"];
+                            } else {
+                                optionName = @"옵션명 없음";
+                            }
+                            
+                            // 옵션 가격 처리
+                            if (selectedItem[@"itemPrice"]) {
+                                optionPriceNum = selectedItem[@"itemPrice"];
+                            } else if (selectedItem[@"menuOptionItemDetailPrice"]) {
+                                optionPriceNum = selectedItem[@"menuOptionItemDetailPrice"];
+                            }
+                            
+                            // 옵션 수량 처리
+                            if (selectedItem[@"quantity"]) {
+                                optionQuantityNum = selectedItem[@"quantity"];
+                            } else if (selectedItem[@"menuOptionItemDetailQuantity"]) {
+                                optionQuantityNum = selectedItem[@"menuOptionItemDetailQuantity"];
+                            }
+                            
                             NSInteger optionPrice = optionPriceNum ? [optionPriceNum integerValue] : 0;
                             NSInteger optionQuantity = optionQuantityNum ? [optionQuantityNum integerValue] : 0;
+                            
+                            NSLog(@"옵션 출력: 메뉴=%@, 옵션=%@, 가격=%ld, 수량=%ld", menuName, optionName, (long)optionPrice, (long)optionQuantity);
                             
                             if (optionPrice > 0) {
                                 if (optionQuantity > 1) {

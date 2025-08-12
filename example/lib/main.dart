@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:blueberry_printer/blueberry_printer.dart';
-import 'package:blueberry_printer/models/order_detail_response.dart';
 import 'sample_receipts.dart';
+import 'sample_single_order_data.dart';
+import 'sample_total_order_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
@@ -45,6 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     initPlatformState();
+    _requestBluetoothPermissions();
   }
 
   Future<void> initPlatformState() async {
@@ -338,67 +340,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _printOrderReceipt() async {
     print('🔍 [DEBUG] 구조화된 주문 영수증 출력 시작');
     try {
-      // 샘플 주문 데이터 생성
-      final sampleOrderData = OrderDetailResponse(
-        orderId: 'ORDER_001',
-        orderNumber: 'ORD-2024-001',
-        tableNumber: 5,
-        tableName: '테이블 5',
-        totalPrice: 22500,
-        orderVersion: [
-          OrderVersionResponse(
-            versionId: 'V001',
-            orderBy: 'TABLE',
-            versionNumber: 1,
-            createdAt: '2024-08-11 23:30:00',
-            orderItems: [
-              OrderDetailItemResponse(
-                menuId: 'MENU_001',
-                menuName: '아메리카노 (ICE)',
-                quantity: 2,
-                price: 9000, // 4500 * 2
-                options: [
-                  MenuOptionResponse(
-                    optionMenuItemId: 'OPT_001',
-                    optionMenuItemName: '시럽 추가',
-                    isRequired: false,
-                    isMultiple: true,
-                    selectedItems: [
-                      SelectedOptionItemResponse(
-                        menuOptionItemId: 'ITEM_001',
-                        itemName: '바닐라 시럽',
-                        itemPrice: 500,
-                        quantity: 1,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              OrderDetailItemResponse(
-                menuId: 'MENU_002',
-                menuName: '카페라떼 (HOT)',
-                quantity: 1,
-                price: 5000,
-                options: [],
-              ),
-              OrderDetailItemResponse(
-                menuId: 'MENU_003',
-                menuName: '블루베리 머핀',
-                quantity: 2,
-                price: 7000, // 3500 * 2
-                options: [],
-              ),
-              OrderDetailItemResponse(
-                menuId: 'MENU_004',
-                menuName: '에스프레소 이중샷',
-                quantity: 1,
-                price: 1000,
-                options: [],
-              ),
-            ],
-          ),
-        ],
-      );
+      // 샘플 단일 주문 데이터 가져오기
+      final sampleOrderData = getSampleSingleOrderData();
 
       print(' [DEBUG] 네이티브 함수 호출 전: printSingleOrder');
       print(' [DEBUG] 전달할 데이터: ${sampleOrderData.toJson()}');
@@ -439,120 +382,17 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       print('🔍 [DEBUG] 누적 주문 영수증 출력 시작');
       
-      // 샘플 데이터에서 누적 주문 데이터 생성 (여러 버전 포함)
-      final cumulativeOrderData = OrderDetailResponse(
-        orderId: 'ORDER_001',
-        orderNumber: 'ORD-2024-001',
-        tableNumber: 5,
-        tableName: '테이블 5번',
-        totalPrice: 45000, // 누적 총 금액
-        orderVersion: [
-          // 버전 1: 초기 주문
-          OrderVersionResponse(
-            versionId: 'V1',
-            orderBy: '고객1',
-            versionNumber: 1,
-            createdAt: '2024-01-15 12:00:00',
-            orderItems: [
-              OrderDetailItemResponse(
-                menuId: 'MENU_001',
-                menuName: '아메리카노',
-                quantity: 2,
-                price: 4500,
-                options: [
-                  MenuOptionResponse(
-                    optionMenuItemId: 'OPT_001',
-                    optionMenuItemName: '사이즈',
-                    isRequired: true,
-                    isMultiple: false,
-                    selectedItems: [
-                      SelectedOptionItemResponse(
-                        menuOptionItemId: 'SIZE_L',
-                        itemName: '라지',
-                        itemPrice: 500,
-                        quantity: 2,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              OrderDetailItemResponse(
-                menuId: 'MENU_002',
-                menuName: '카페라떼',
-                quantity: 1,
-                price: 5000,
-                options: [],
-              ),
-            ],
-          ),
-          // 버전 2: 추가 주문
-          OrderVersionResponse(
-            versionId: 'V2',
-            orderBy: '고객2',
-            versionNumber: 2,
-            createdAt: '2024-01-15 12:15:00',
-            orderItems: [
-              OrderDetailItemResponse(
-                menuId: 'MENU_003',
-                menuName: '단호박 케이크',
-                quantity: 1,
-                price: 6500,
-                options: [],
-              ),
-              OrderDetailItemResponse(
-                menuId: 'MENU_004',
-                menuName: '아이스 티',
-                quantity: 3,
-                price: 3000,
-                options: [
-                  MenuOptionResponse(
-                    optionMenuItemId: 'OPT_002',
-                    optionMenuItemName: '시럽',
-                    isRequired: false,
-                    isMultiple: true,
-                    selectedItems: [
-                      SelectedOptionItemResponse(
-                        menuOptionItemId: 'SYRUP_VANILLA',
-                        itemName: '바닐라 시럽',
-                        itemPrice: 500,
-                        quantity: 2,
-                      ),
-                      SelectedOptionItemResponse(
-                        menuOptionItemId: 'SYRUP_CARAMEL',
-                        itemName: '카라멜 시럽',
-                        itemPrice: 500,
-                        quantity: 1,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // 버전 3: 추가 주문 2
-          OrderVersionResponse(
-            versionId: 'V3',
-            orderBy: '고객1',
-            versionNumber: 3,
-            createdAt: '2024-01-15 12:30:00',
-            orderItems: [
-              OrderDetailItemResponse(
-                menuId: 'MENU_005',
-                menuName: '크로와상',
-                quantity: 2,
-                price: 4000,
-                options: [],
-              ),
-            ],
-          ),
-        ],
-      );
+      // 샘플 전체 주문 데이터 가져오기
+      final cumulativeOrderData = getSampleTotalOrderData();
       
-      print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 버전 수: ${cumulativeOrderData.orderVersion.length}');
+      print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
+      
+      // 업데이트된 iOS 네이티브 코드가 Flutter 모델 구조를 직접 처리함
+      print('🔍 [DEBUG] 주문 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
       
       // 전체 주문 영수증 출력
       bool success = await _blueberryPrinterPlugin.printTotalOrder(
-        cumulativeOrderData,
+        cumulativeOrderData, // OrderHistoryTotalResponse 객체 그대로 사용
         storeName: '카페 블루베리',
         storeAddress: '서울특별시 강남구 테헤란로 123',
         phoneNumber: '02-1234-5678',
