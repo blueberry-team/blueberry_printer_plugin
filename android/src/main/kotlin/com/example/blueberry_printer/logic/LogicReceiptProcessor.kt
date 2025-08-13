@@ -347,8 +347,9 @@ object LogicReceiptProcessor {
                 val orderNumber = orderData["orderNumber"] as? String ?: getLocalizedText("no_order_number")
                 val tableName = orderData["tableName"] as? String ?: getLocalizedText("no_table_info")
                 
-                // 모든 버전의 주문 데이터에서 총 금액 자동 계산
-                var grandTotalPrice = 0
+                // API 응답에서 제공하는 총 금액 사용
+                val grandTotalPrice = orderData["totalPrice"] as? Int ?: 0
+                Log.d(TAG, "응답에서 제공된 총 가격: $grandTotalPrice")
                 
                 // orderVersion이 없고 orderMenus가 있는 경우(Flutter 모델 구조)
                 var orderVersions = orderData["orderVersion"] as? List<Map<String, Any>>
@@ -450,7 +451,11 @@ object LogicReceiptProcessor {
                         
                         // 메뉴명 + 옵션 조합을 기준으로 한 고유 키
                         val uniqueKey = "$menuName$optionKey"
-                        val totalItemPrice = (basePrice * quantity) + optionTotalPrice
+                        // API에서 제공하는 가격 사용 
+                        // 메뉴 아이템에는 totalPrice가 아닌 price 필드가 있으며, 수량을 곱해야 함
+                        val price = menuItem["price"] as? Int ?: 0
+                        val totalItemPrice = price
+                        Log.d(TAG, "[메뉴: $menuName] 가격: $price = $totalItemPrice")
                         
                         // 메뉴 아이템 합치기 (동일한 메뉴 + 옵션 조합인 경우에만)
                         if (mergedItems.containsKey(uniqueKey)) {
@@ -462,6 +467,7 @@ object LogicReceiptProcessor {
                                 "menuName" to menuName,
                                 "quantity" to quantity,
                                 "basePrice" to basePrice,
+                                "apiTotalPrice" to apiTotalPrice,
                                 "totalPrice" to totalItemPrice,
                                 "options" to options
                             )
@@ -474,9 +480,10 @@ object LogicReceiptProcessor {
                     val menuName = itemData["menuName"] as String
                     val quantity = itemData["quantity"] as Int
                     val totalPrice = itemData["totalPrice"] as Int
+                    val apiTotalPrice = itemData["apiTotalPrice"] as? Int
                     val options = itemData["options"] as List<Map<String, Any>>
                     
-                    grandTotalPrice += totalPrice
+                    // 응답에서 제공된 totalPrice를 사용하므로 개별 아이템 합산 제거
                     
                     sb.append("$menuName x$quantity = ${formatPrice(totalPrice)}${getCurrencySymbol()}\n")
                     

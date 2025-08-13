@@ -632,7 +632,10 @@
         NSString* tableName = tableNumber ? tableNumber : (orderData[@"tableName"] ?: getLocalizedText(@"no_table_info"));
         
         // 모든 버전의 주문 데이터에서 총 금액 자동 계산
-        NSInteger grandTotalPrice = 0;
+        // API 응답에서 제공하는 총가 사용
+        NSNumber *totalPriceNum = orderData[@"totalPrice"];
+        NSInteger grandTotalPrice = totalPriceNum ? [totalPriceNum integerValue] : 0;
+        NSLog(@"🔍 [DEBUG] 응답에서 제공된 총 가격: %ld", (long)grandTotalPrice);
         
         // Flutter의 OrderHistoryTotalResponse 모델과 호환되도록 수정
         // orderVersion을 먼저 확인하고, 없으면 orderMenus를 처리
@@ -761,7 +764,14 @@
                     
                     // 메뉴명 + 옵션 조합을 기준으로 한 고유 키
                     NSString* uniqueKey = [NSString stringWithFormat:@"%@%@", menuName, optionKey];
-                    NSInteger totalItemPrice = (basePrice * quantity) + optionTotalPrice;
+                    
+                    // API에서 제공하는 가격 사용
+                    // 메뉴 아이템에는 totalPrice가 아닌 price 필드가 있으며, 수량을 곱해야 함
+                    NSNumber *priceNum = item[@"price"];
+                    NSInteger price = priceNum ? [priceNum integerValue] : 0;
+                    NSInteger totalItemPrice = price;
+                    
+                    NSLog(@"🔍 [DEBUG] [메뉴: %@] 가격: %ld", menuName, (long)price);
                     
                     // 메뉴 아이템 합치기 (동일한 메뉴 + 옵션 조합인 경우에만)
                     if (mergedItems[uniqueKey]) {
@@ -791,7 +801,7 @@
             NSInteger totalPrice = [itemData[@"totalPrice"] integerValue];
             NSArray* options = itemData[@"options"];
             
-            grandTotalPrice += totalPrice;
+            // 응답에서 제공된 totalPrice를 사용하므로 개별 아이템 합산 제거
             
             [receiptText appendFormat:@"%@ x%ld = %@%@\n", 
              menuName, (long)quantity, [self formatPrice:totalPrice], getCurrencySymbol()];
