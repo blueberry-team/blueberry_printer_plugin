@@ -138,6 +138,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
       "printSingleOrder" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
         val storeName = call.argument<String>("storeName")
+        val tableNumber = call.argument<String>("tableNumber")
         val storeAddress = call.argument<String>("storeAddress")
         val phoneNumber = call.argument<String>("phoneNumber")
         val businessNumber = call.argument<String>("businessNumber")
@@ -164,7 +165,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         try {
           Log.d("BridgeFlutterPlugin", "단일 주문 영수증 출력 시작")
           val formattedReceipt = LogicReceiptProcessor.formatSingleOrderReceipt(
-            orderData, storeName, null, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
+            orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
           )
           Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")
@@ -178,6 +179,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
       "printTotalOrder" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
         val storeName = call.argument<String>("storeName")
+        val tableNumber = call.argument<String>("tableNumber")
         val storeAddress = call.argument<String>("storeAddress")
         val phoneNumber = call.argument<String>("phoneNumber")
         val businessNumber = call.argument<String>("businessNumber")
@@ -203,7 +205,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         try {
           Log.d("BridgeFlutterPlugin", "전체 주문 영수증 출력 시작")
           val formattedReceipt = LogicReceiptProcessor.formatTotalOrderReceipt(
-            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
+            orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
           )
           Log.d("BridgeFlutterPlugin", "생성된 전체 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "전체 영수증 포맷 길이: ${formattedReceipt.length}")
