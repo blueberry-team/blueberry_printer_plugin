@@ -164,7 +164,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
         try {
           Log.d("BridgeFlutterPlugin", "단일 주문 영수증 출력 시작")
           val formattedReceipt = LogicReceiptProcessor.formatSingleOrderReceipt(
-            orderData, storeName, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
+            orderData, storeName, null, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
           )
           Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
           Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")

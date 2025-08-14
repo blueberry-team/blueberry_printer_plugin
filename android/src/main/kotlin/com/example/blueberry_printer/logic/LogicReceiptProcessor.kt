@@ -167,8 +167,6 @@ object LogicReceiptProcessor {
                 
                 // 상품 목록 섹션
                 sb.append("${getLocalizedText("menu_list")}, 20\n")
-                val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
-                
                 for (version in orderVersions) {
                     val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
                     
@@ -453,7 +451,7 @@ object LogicReceiptProcessor {
                         val uniqueKey = "$menuName$optionKey"
                         // API에서 제공하는 가격 사용 
                         // 메뉴 아이템에는 totalPrice가 아닌 price 필드가 있으며, 수량을 곱해야 함
-                        val price = menuItem["price"] as? Int ?: 0
+                        val price = item["price"] as? Int ?: 0
                         val totalItemPrice = price
                         Log.d(TAG, "[메뉴: $menuName] 가격: $price = $totalItemPrice")
                         
@@ -467,7 +465,7 @@ object LogicReceiptProcessor {
                                 "menuName" to menuName,
                                 "quantity" to quantity,
                                 "basePrice" to basePrice,
-                                "apiTotalPrice" to apiTotalPrice,
+                                "basePrice" to basePrice,
                                 "totalPrice" to totalItemPrice,
                                 "options" to options
                             )
@@ -794,10 +792,9 @@ object LogicReceiptProcessor {
                 Log.d(TAG, "영수증 파싱 완료")
                 
             } catch (e: Exception) {
-                Log.e(TAG, "프린터 출력 오류: ${e.message}", e)
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "텍스트 파싱 오류: ${e.message}", e)
+                Log.e(TAG, "영수증 파싱 및 출력 오류: ${e.message}", e)
                 throw e
             }
         }
+        
+}
