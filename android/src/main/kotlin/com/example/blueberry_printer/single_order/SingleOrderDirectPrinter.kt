@@ -131,7 +131,7 @@ object SingleOrderDirectPrinter {
      */
     private fun printStoreLabel(outputStream: OutputStream, localizer: Localizer) {
         val image = KoreanTextRenderer.createTextImage(
-            PrintConstants.StoreLabel.TEXT.trimIndent(),
+            localizer.getText("store_label"),
             PrintConstants.FontSize.STORE_LABEL,
             PrintConstants.StoreLabel.IS_BOLD,
             KoreanTextRenderer.TextAlign.CENTER
@@ -404,6 +404,7 @@ ${localizer.getText("table")}: $tableName
                     "business_number" -> "Business No"
                     "no_order_number" -> "No order number"
                     "no_table_info" -> "No table info"
+                    "store_label" -> "┌────────────────────┐\n│     Store Copy     │\n└────────────────────┘"
                     else -> key
                 }
                 "jpn" -> when (key) {
@@ -420,6 +421,7 @@ ${localizer.getText("table")}: $tableName
                     "business_number" -> "事業者番号"
                     "no_order_number" -> "注文番号なし"
                     "no_table_info" -> "テーブル情報なし"
+                    "store_label" -> "┌────────────────────┐\n│      店舗用控え      │\n└────────────────────┘"
                     else -> key
                 }
                 else -> when (key) { // "kor" (기본값)
@@ -436,6 +438,7 @@ ${localizer.getText("table")}: $tableName
                     "business_number" -> "사업자등록번호"
                     "no_order_number" -> "주문번호 없음"
                     "no_table_info" -> "테이블 정보 없음"
+                    "store_label" -> "┌────────────────────┐\n│        점포용        │\n└────────────────────┘"
                     else -> key
                 }
             }

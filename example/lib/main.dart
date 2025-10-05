@@ -542,97 +542,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// 직접 출력 방식 - 단일 주문 영수증
-  Future<void> _printDirectSingleOrder() async {
-    print('🔍 [DEBUG] 직접 출력 방식 - 단일 주문 영수증 출력 시작');
-    try {
-      // 더미 데이터 가져오기
-      final directOrderData = DummyDirectPrintData.getSingleOrderData();
-
-      print('🔍 [DEBUG] 네이티브 함수 호출 전: printSingleOrder (Direct)');
-      print('🔍 [DEBUG] 전달할 데이터: ${directOrderData.toJson()}');
-
-      final success = await _blueberryPrinterPlugin.printSingleOrder(
-        directOrderData,
-        storeName: '블루베리 카페 (Direct)',
-        tableNumber: '테이블 7번',
-        storeAddress: '서울특별시 서초구 서초대로 78길 15',
-        phoneNumber: '02-8899-7766',
-        businessNumber: '555-88-99123',
-        thankYouMessage: '직접 출력 방식으로 출력되었습니다!\n감사합니다.',
-        language: 'kor',
-        currency: 'KRW',
-      );
-
-      print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                success ? '직접 출력 단일 주문 영수증 출력 완료' : '직접 출력 단일 주문 영수증 출력 실패'),
-            backgroundColor: success ? Colors.teal : Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print('🔍 [DEBUG] 직접 출력 단일 주문 영수증 출력 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('직접 출력 단일 주문 영수증 출력 오류: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  /// 직접 출력 방식 - 전체 주문 영수증
-  Future<void> _printDirectTotalOrder() async {
-    print('🔍 [DEBUG] 직접 출력 방식 - 전체 주문 영수증 출력 시작');
-    try {
-      // 더미 데이터 가져오기
-      final directTotalOrderData = DummyDirectPrintData.getTotalOrderData();
-
-      print('🔍 [DEBUG] 네이티브 함수 호출 전: printTotalOrder (Direct)');
-      print(
-          '🔍 [DEBUG] 전달할 데이터 - 메뉴 수: ${directTotalOrderData.orderMenus.length}');
-
-      final success = await _blueberryPrinterPlugin.printTotalOrder(
-        directTotalOrderData,
-        storeName: '블루베리 카페 본점 (Direct)',
-        tableNumber: 'VIP-99',
-        storeAddress: '서울특별시 강남구 테헤란로 427',
-        phoneNumber: '02-3456-7890',
-        businessNumber: '123-45-67890',
-        thankYouMessage: '직접 출력 방식 전체 주문!\n항상 감사드립니다.',
-        language: 'kor',
-        currency: 'KRW',
-      );
-
-      print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                success ? '직접 출력 전체 주문 영수증 출력 완료' : '직접 출력 전체 주문 영수증 출력 실패'),
-            backgroundColor: success ? Colors.cyan : Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print('🔍 [DEBUG] 직접 출력 전체 주문 영수증 출력 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('직접 출력 전체 주문 영수증 출력 오류: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   /// 한국 영수증 출력 (KRW - 정수)
   Future<void> _printKoreanReceipt() async {
     try {
@@ -919,36 +828,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             label: const Text('전체 주문 (누적)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepOrange,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-
-                        // Direct 단일 주문
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _printDirectSingleOrder,
-                            icon: const Icon(Icons.bolt),
-                            label: const Text('단일 주문 (Direct)'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-
-                        // Direct 전체 주문
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _printDirectTotalOrder,
-                            icon: const Icon(Icons.flash_on),
-                            label: const Text('전체 주문 (Direct)'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.cyan,
                               foregroundColor: Colors.white,
                             ),
                           ),
