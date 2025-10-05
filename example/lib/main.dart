@@ -8,6 +8,21 @@ import 'sample_total_order_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 
+// 연결 상태 Enum
+enum PrinterConnectionState {
+  connected,    // 연결됨 (녹색)
+  suspended,    // 일시 중지 (주황색) - 오프라인, 용지 부족 등
+  disconnected, // 연결 안됨 (회색)
+}
+
+// 에러 기록 클래스
+class ConnectionError {
+  final String message;
+  final DateTime timestamp;
+
+  ConnectionError({required this.message, required this.timestamp});
+}
+
 void main() {
   runApp(const MyApp());
 }
@@ -45,6 +60,12 @@ class _MyHomePageState extends State<MyHomePage> {
   String _connectionStatus = '연결되지 않음';
   StreamSubscription? _connectionStatusSubscription;
 
+  // 연결 상태 추적
+  PrinterConnectionState _currentConnectionState = PrinterConnectionState.disconnected;
+  final List<ConnectionError> _errorHistory = [];
+  bool _hasUnreadStatusChange = false; // 읽지 않은 상태 변경
+  bool _isFirstConnection = true; // 첫 연결인지 확인
+
   static const EventChannel _connectionStatusChannel =
       EventChannel('blueberry_printer/connection_status');
 
@@ -72,16 +93,43 @@ class _MyHomePageState extends State<MyHomePage> {
         final reason = event['reason'] as String?;
 
         setState(() {
+          // 첫 연결이 아닐 때만 알림 표시
+          if (!_isFirstConnection) {
+            _hasUnreadStatusChange = true;
+          }
+
           if (status == 'connected') {
             _connectionStatus = '연결됨';
+            _currentConnectionState = PrinterConnectionState.connected;
             if (!_isConnected) {
               _isConnected = true;
             }
+            // 첫 연결 완료
+            _isFirstConnection = false;
           } else if (status == 'disconnected') {
             // 이유가 있으면 표시, 없으면 기본 메시지
             _connectionStatus = reason ?? '연결 끊김';
             _isConnected = false;
             _connectedDeviceName = '';
+
+            // 일시적 오류 vs 영구적 오류 구분
+            if (reason == '프린터 오프라인' || reason == '용지 부족' || reason == '프린터 에러') {
+              _currentConnectionState = PrinterConnectionState.suspended;
+            } else {
+              _currentConnectionState = PrinterConnectionState.disconnected;
+            }
+
+            // 에러 기록 추가
+            if (reason != null) {
+              _errorHistory.insert(0, ConnectionError(
+                message: reason,
+                timestamp: DateTime.now(),
+              ));
+              // 최대 10개까지만 저장
+              if (_errorHistory.length > 10) {
+                _errorHistory.removeLast();
+              }
+            }
           }
         });
 
@@ -308,6 +356,8 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _isConnected = false;
           _connectedDeviceName = '';
+          _connectionStatus = '연결되지 않음';
+          _currentConnectionState = PrinterConnectionState.disconnected;
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -494,23 +544,52 @@ class _MyHomePageState extends State<MyHomePage> {
         title: const Text('블루베리 프린터'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Center(
-              child: Row(
+          InkWell(
+            onTap: () {
+              setState(() {
+                _hasUnreadStatusChange = false;
+              });
+              _showErrorHistoryDialog();
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Icon(
-                    _isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-                    color: _isConnected ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _connectionStatus,
-                    style: TextStyle(
-                      color: _isConnected ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
+                  // 상태 점
+                  Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _getStatusColor(),
                     ),
                   ),
+                  // 알림 배지
+                  if (_hasUnreadStatusChange)
+                    Positioned(
+                      right: -4,
+                      top: -4,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.red,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '!',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 6,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -531,81 +610,37 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             
             SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            
-            // 연결 상태 표시
-            if (_isConnected)
-              Card(
-                color: Colors.green.withAlpha(50),
-                child: ListTile(
-                  leading: const Icon(Icons.bluetooth_connected, color: Colors.green),
-                  title: const Text('연결됨'),
-                  subtitle: Text(_connectedDeviceName),
-                  trailing: ElevatedButton(
+
+            // 기기 검색 및 연결 버튼
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showDeviceSearchDialog,
+                    icon: const Icon(Icons.bluetooth_searching),
+                    label: const Text('프린터 연결'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                if (_isConnected) ...[
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
                     onPressed: _disconnect,
-                    child: const Text('연결 해제'),
+                    icon: const Icon(Icons.bluetooth_disabled),
+                    label: const Text('연결 해제'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                    ),
                   ),
-                ),
-              )
-            else
-              Card(
-                color: Colors.red.withAlpha(50),
-                child: const ListTile(
-                  leading: Icon(Icons.bluetooth_disabled, color: Colors.red),
-                  title: Text('연결되지 않음'),
-                  subtitle: Text('블루투스 프린터에 연결해주세요'),
-                ),
-              ),
-            
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            
-            // 기기 검색 버튼
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isScanning ? null : _searchDevices,
-                icon: _isScanning 
-                  ? SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.04,
-                      height: MediaQuery.of(context).size.width * 0.04,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.search),
-                label: Text(_isScanning ? '검색 중...' : '블루투스 기기 검색'),
-              ),
+                ],
+              ],
             ),
-            
+
             SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            
-            // 기기 목록
-            Expanded(
-              child: _devices.isEmpty
-                ? const Center(
-                    child: Text('검색된 기기가 없습니다.\n위 버튼을 눌러 기기를 검색해보세요.'),
-                  )
-                : ListView.builder(
-                    itemCount: _devices.length,
-                    itemBuilder: (context, index) {
-                      final device = _devices[index];
-                      final deviceName = device['name'] ?? '알 수 없는 기기';
-                      final deviceAddress = device['address'] ?? '';
-                      
-                      return Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.bluetooth),
-                          title: Text(deviceName),
-                          subtitle: Text(deviceAddress),
-                          trailing: ElevatedButton(
-                            onPressed: _isConnected ? null : () => _connectDevice(
-                              deviceAddress, 
-                              deviceName
-                            ),
-                            child: const Text('연결'),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-            ),
             
             // 영수증 출력 버튼들
             if (_isConnected) ...[
@@ -690,5 +725,203 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  // 상태 색상 가져오기
+  Color _getStatusColor() {
+    switch (_currentConnectionState) {
+      case PrinterConnectionState.connected:
+        return Colors.green;
+      case PrinterConnectionState.suspended:
+        return Colors.orange;
+      case PrinterConnectionState.disconnected:
+        return Colors.grey;
+    }
+  }
+
+  // 에러 히스토리 다이얼로그 표시
+  void _showErrorHistoryDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _getStatusColor(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('연결 상태'),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 300,
+              minHeight: 100,
+            ),
+            child: SizedBox(
+              width: double.maxFinite,
+              child: _errorHistory.isEmpty
+                  ? const Center(child: Text('에러 기록이 없습니다.'))
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _errorHistory.length,
+                      itemBuilder: (context, index) {
+                        final error = _errorHistory[index];
+                        return ListTile(
+                          leading: const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          title: Text(error.message),
+                          subtitle: Text(
+                            _formatTimestamp(error.timestamp),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          dense: true,
+                        );
+                      },
+                    ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _errorHistory.clear();
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('기록 삭제'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('닫기'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 시간 포맷
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}초 전';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}분 전';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}시간 전';
+    } else {
+      return '${timestamp.month}/${timestamp.day} ${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
+  // 블루투스 기기 검색 다이얼로그
+  Future<void> _showDeviceSearchDialog() async {
+    // 검색 시작
+    setState(() {
+      _isScanning = true;
+      _devices = [];
+    });
+
+    StateSetter? dialogSetState;
+
+    // 다이얼로그 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            dialogSetState = setDialogState;
+            return AlertDialog(
+              title: const Text('블루투스 기기 검색'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: _isScanning && _devices.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CircularProgressIndicator(),
+                            SizedBox(height: 16),
+                            Text('검색 중...'),
+                          ],
+                        ),
+                      )
+                    : _devices.isEmpty
+                        ? const Center(child: Text('검색된 기기가 없습니다.'))
+                        : ListView.builder(
+                            itemCount: _devices.length,
+                            itemBuilder: (context, index) {
+                              final device = _devices[index];
+                              final deviceName = device['name'] ?? '알 수 없는 기기';
+                              final deviceAddress = device['address'] ?? '';
+
+                              return ListTile(
+                                leading: const Icon(Icons.bluetooth),
+                                title: Text(deviceName),
+                                subtitle: Text(deviceAddress),
+                                onTap: () async {
+                                  Navigator.of(dialogContext).pop();
+                                  await _connectDevice(deviceAddress, deviceName);
+                                },
+                              );
+                            },
+                          ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    setState(() {
+                      _devices = [];
+                      _isScanning = false;
+                    });
+                  },
+                  child: const Text('취소'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    // 검색 실행
+    try {
+      print('🔍 [DEBUG] 기기 검색 시작');
+      final devices = await _blueberryPrinterPlugin.searchDevices();
+      print('🔍 [DEBUG] 기기 검색 완료: ${devices.length}개');
+
+      if (mounted) {
+        setState(() {
+          _devices = devices;
+          _isScanning = false;
+        });
+        // 다이얼로그도 업데이트
+        dialogSetState?.call(() {});
+      }
+    } catch (e) {
+      print('🔍 [DEBUG] 기기 검색 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+        dialogSetState?.call(() {});
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('검색 실패: $e')),
+        );
+      }
+    }
   }
 }
