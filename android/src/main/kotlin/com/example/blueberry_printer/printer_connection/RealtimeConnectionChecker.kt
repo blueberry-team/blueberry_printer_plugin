@@ -2,6 +2,7 @@ package com.example.blueberry_printer.printer_connection
 
 import android.bluetooth.BluetoothSocket
 import android.util.Log
+import com.example.blueberry_printer.common.DisconnectReason
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -34,7 +35,7 @@ class RealtimeConnectionChecker(
     private val socket: BluetoothSocket,
     private val heartbeatIntervalMs: Long = 5000, // 5초마다 Heartbeat
     private val socketTimeoutMs: Int = 3000, // 3초 소켓 타임아웃
-    private val onConnectionLost: (String) -> Unit, // 이유를 포함한 콜백
+    private val onConnectionLost: (DisconnectReason) -> Unit, // DisconnectReason enum을 전달
     private val onConnectionRestored: (() -> Unit)? = null
 ) {
     companion object {
@@ -131,11 +132,11 @@ class RealtimeConnectionChecker(
         } catch (e: SocketException) {
             Log.e(TAG, "Socket error during heartbeat: ${e.message}")
             // Heartbeat 실패는 영구적 오류로 간주
-            handlePermanentConnectionLost("Heartbeat 소켓 오류")
+            handlePermanentConnectionLost(DisconnectReason.SOCKET_CLOSED)
         } catch (e: IOException) {
             Log.e(TAG, "IO error during heartbeat: ${e.message}")
             // Heartbeat 실패는 영구적 오류로 간주
-            handlePermanentConnectionLost("Heartbeat I/O 오류")
+            handlePermanentConnectionLost(DisconnectReason.IO_ERROR)
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during heartbeat: ${e.message}", e)
         }
@@ -144,9 +145,9 @@ class RealtimeConnectionChecker(
     /**
      * 연결 끊김 처리 (일시적 - 자동 복구 가능)
      */
-    private fun handleConnectionLost(reason: String = "연결 끊김") {
+    private fun handleConnectionLost(reason: DisconnectReason = DisconnectReason.UNKNOWN) {
         if (isConnected.getAndSet(false)) {
-            Log.w(TAG, "Temporary connection lost detected: $reason")
+            Log.w(TAG, "Temporary connection lost detected: ${reason.code}")
 
             // Heartbeat는 계속 보내서 자동 복구 감지
             // (일시적 오류: 오프라인, 용지 부족 등)
@@ -163,9 +164,9 @@ class RealtimeConnectionChecker(
     /**
      * 연결 끊김 처리 (영구적 - Heartbeat도 중지)
      */
-    private fun handlePermanentConnectionLost(reason: String = "연결 끊김") {
+    private fun handlePermanentConnectionLost(reason: DisconnectReason = DisconnectReason.UNKNOWN) {
         if (isConnected.getAndSet(false)) {
-            Log.e(TAG, "Permanent connection lost detected: $reason")
+            Log.e(TAG, "Permanent connection lost detected: ${reason.code}")
 
             // Heartbeat 타이머도 중지
             heartbeatTimer?.cancel()
@@ -219,7 +220,7 @@ class RealtimeConnectionChecker(
                         if (bytesRead == -1) {
                             // 연결 끊김 (EOF) - 영구적 연결 끊김
                             Log.w(TAG, "EOF detected - permanent connection lost")
-                            handlePermanentConnectionLost("연결 끊김 (EOF)")
+                            handlePermanentConnectionLost(DisconnectReason.SOCKET_CLOSED)
                             break
                         } else if (bytesRead > 0) {
                             // 프린터 응답 수신 (Heartbeat 응답 또는 기타 데이터)
@@ -232,20 +233,20 @@ class RealtimeConnectionChecker(
                     } catch (e: SocketException) {
                         if (running) {
                             Log.e(TAG, "Socket exception in monitor thread: ${e.message}")
-                            handlePermanentConnectionLost("소켓 오류: ${e.message}")
+                            handlePermanentConnectionLost(DisconnectReason.SOCKET_CLOSED)
                             break
                         }
                     } catch (e: IOException) {
                         if (running) {
                             Log.e(TAG, "IO exception in monitor thread: ${e.message}")
-                            handlePermanentConnectionLost("I/O 오류: ${e.message}")
+                            handlePermanentConnectionLost(DisconnectReason.IO_ERROR)
                             break
                         }
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error in monitor thread: ${e.message}", e)
-                handlePermanentConnectionLost("예기치 않은 오류: ${e.message}")
+                handlePermanentConnectionLost(DisconnectReason.UNKNOWN)
             } finally {
                 Log.d(TAG, "Monitor thread stopped")
             }
@@ -263,19 +264,19 @@ class RealtimeConnectionChecker(
                 when {
                     (status and 0x08) != 0 -> {
                         Log.w(TAG, "Printer offline - but keeping monitor thread alive for auto-recovery")
-                        handleConnectionLost("프린터 오프라인")
+                        handleConnectionLost(DisconnectReason.PRINTER_OFFLINE)
                         // 모니터 스레드는 계속 실행 (자동 복구 대기)
                         return true
                     }
                     (status and 0x20) != 0 -> {
                         Log.w(TAG, "Paper out - but keeping monitor thread alive for auto-recovery")
-                        handleConnectionLost("용지 부족")
+                        handleConnectionLost(DisconnectReason.OUT_OF_PAPER)
                         // 모니터 스레드는 계속 실행 (자동 복구 대기)
                         return true
                     }
                     (status and 0x40) != 0 -> {
                         Log.w(TAG, "Printer error - but keeping monitor thread alive for auto-recovery")
-                        handleConnectionLost("프린터 에러")
+                        handleConnectionLost(DisconnectReason.UNKNOWN)
                         // 모니터 스레드는 계속 실행 (자동 복구 대기)
                         return true
                     }

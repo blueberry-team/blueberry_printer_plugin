@@ -4,12 +4,17 @@ import 'package:flutter/services.dart';
 import 'blueberry_printer_platform_interface.dart';
 import 'models/order_detail_response.dart';
 import 'models/order_history_total_response.dart';
+import 'models/connection_status.dart';
 
 /// An implementation of [BlueberryPrinterPlatform] that uses method channels.
 class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
   final methodChannel = const MethodChannel('blueberry_printer');
+
+  /// The event channel used for connection status stream
+  @visibleForTesting
+  final eventChannel = const EventChannel('blueberry_printer/connection_status');
 
   @override
   Future<String?> getPlatformVersion() async {
@@ -157,5 +162,12 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
       print(' [DEBUG] MethodChannel: 오류 발생: $e');
       rethrow;
     }
+  }
+
+  @override
+  Stream<ConnectionStatus> get connectionStatusStream {
+    return eventChannel.receiveBroadcastStream().map((event) {
+      return ConnectionStatus.fromMap(event as Map<dynamic, dynamic>);
+    });
   }
 }

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:blueberry_printer/blueberry_printer.dart';
+import 'package:blueberry_printer/models/connection_status.dart';
+import 'package:blueberry_printer/models/disconnect_reason.dart';
 import 'dummy_direct_print_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 
 // 연결 상태 Enum
 enum PrinterConnectionState {
-  connected,    // 연결됨 (녹색)
-  suspended,    // 일시 중지 (주황색) - 오프라인, 용지 부족 등
+  connected, // 연결됨 (녹색)
+  suspended, // 일시 중지 (주황색) - 오프라인, 용지 부족 등
   disconnected, // 연결 안됨 (회색)
 }
 
@@ -59,7 +61,8 @@ class _MyHomePageState extends State<MyHomePage> {
   StreamSubscription? _connectionStatusSubscription;
 
   // 연결 상태 추적
-  PrinterConnectionState _currentConnectionState = PrinterConnectionState.disconnected;
+  PrinterConnectionState _currentConnectionState =
+      PrinterConnectionState.disconnected;
   final List<ConnectionError> _errorHistory = [];
   bool _hasUnreadStatusChange = false; // 읽지 않은 상태 변경
   bool _isFirstConnection = true; // 첫 연결인지 확인
@@ -82,64 +85,61 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _listenToConnectionStatus() {
-    _connectionStatusSubscription = _connectionStatusChannel
-        .receiveBroadcastStream()
-        .listen((event) {
-      if (event is Map) {
-        final status = event['status'] as String?;
-        final message = event['message'] as String?;
-        final reason = event['reason'] as String?;
-
-        setState(() {
-          // 첫 연결이 아닐 때만 알림 표시
-          if (!_isFirstConnection) {
-            _hasUnreadStatusChange = true;
-          }
-
-          if (status == 'connected') {
-            _connectionStatus = '연결됨';
-            _currentConnectionState = PrinterConnectionState.connected;
-            if (!_isConnected) {
-              _isConnected = true;
-            }
-            // 첫 연결 완료
-            _isFirstConnection = false;
-          } else if (status == 'disconnected') {
-            // 이유가 있으면 표시, 없으면 기본 메시지
-            _connectionStatus = reason ?? '연결 끊김';
-            _isConnected = false;
-            _connectedDeviceName = '';
-
-            // 일시적 오류 vs 영구적 오류 구분
-            if (reason == '프린터 오프라인' || reason == '용지 부족' || reason == '프린터 에러') {
-              _currentConnectionState = PrinterConnectionState.suspended;
-            } else {
-              _currentConnectionState = PrinterConnectionState.disconnected;
-            }
-
-            // 에러 기록 추가
-            if (reason != null) {
-              _errorHistory.insert(0, ConnectionError(
-                message: reason,
-                timestamp: DateTime.now(),
-              ));
-              // 최대 10개까지만 저장
-              if (_errorHistory.length > 10) {
-                _errorHistory.removeLast();
-              }
-            }
-          }
-        });
-
-        if (message != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: status == 'connected' ? Colors.green : Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
-          );
+    _connectionStatusSubscription =
+        _blueberryPrinterPlugin.connectionStatusStream.listen((status) {
+      setState(() {
+        // 첫 연결이 아닐 때만 알림 표시
+        if (!_isFirstConnection) {
+          _hasUnreadStatusChange = true;
         }
+
+        if (status.isConnected) {
+          _connectionStatus = status.getLocalizedMessage('kor');
+          _currentConnectionState = PrinterConnectionState.connected;
+          if (!_isConnected) {
+            _isConnected = true;
+          }
+          // 첫 연결 완료
+          _isFirstConnection = false;
+        } else if (status.isDisconnected) {
+          _connectionStatus = status.getLocalizedMessage('kor');
+          _isConnected = false;
+          _connectedDeviceName = '';
+
+          // 일시적 오류 vs 영구적 오류 구분 (enum 사용)
+          if (status.disconnectReason == DisconnectReason.printerOffline ||
+              status.disconnectReason == DisconnectReason.outOfPaper) {
+            _currentConnectionState = PrinterConnectionState.suspended;
+          } else {
+            _currentConnectionState = PrinterConnectionState.disconnected;
+          }
+
+          // 에러 기록 추가
+          if (status.disconnectReason != null) {
+            _errorHistory.insert(
+                0,
+                ConnectionError(
+                  message: status.getLocalizedMessage('kor'),
+                  timestamp: DateTime.now(),
+                ));
+            // 최대 10개까지만 저장
+            if (_errorHistory.length > 10) {
+              _errorHistory.removeLast();
+            }
+          }
+        }
+      });
+
+      // 스낵바 표시
+      if (mounted && !_isFirstConnection) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(status.getLocalizedMessage('kor')),
+            backgroundColor:
+                status.isConnected ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     });
   }
@@ -147,7 +147,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> initPlatformState() async {
     String platformVersion;
     try {
-      platformVersion = await _blueberryPrinterPlugin.getPlatformVersion() ?? 'Unknown platform version';
+      platformVersion = await _blueberryPrinterPlugin.getPlatformVersion() ??
+          'Unknown platform version';
     } catch (e) {
       platformVersion = 'Failed to get platform version: $e';
     }
@@ -161,7 +162,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<bool> _requestBluetoothPermissions() async {
     print("🔍 [DEBUG] _requestBluetoothPermissions() 시작");
-    
+
     // 현재 권한 상태 먼저 확인
     print("🔍 [DEBUG] 현재 권한 상태 확인:");
     Map<Permission, PermissionStatus> currentStatus = {
@@ -172,11 +173,11 @@ class _MyHomePageState extends State<MyHomePage> {
       Permission.location: await Permission.location.status,
       Permission.locationWhenInUse: await Permission.locationWhenInUse.status,
     };
-    
+
     currentStatus.forEach((permission, status) {
       print("🔍 [DEBUG] 현재 $permission: $status");
     });
-    
+
     // 1단계: 블루투스 권한만 먼저 요청
     print("🔍 [DEBUG] 1단계: 블루투스 권한 요청");
     Map<Permission, PermissionStatus> bluetoothPermissions = await [
@@ -204,20 +205,24 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     // 모든 권한 상태 확인
-    Map<Permission, PermissionStatus> allPermissions = {...bluetoothPermissions, ...locationPermissions};
-    
-    bool allGranted = allPermissions.values.every((status) => 
-      status == PermissionStatus.granted || status == PermissionStatus.limited);
+    Map<Permission, PermissionStatus> allPermissions = {
+      ...bluetoothPermissions,
+      ...locationPermissions
+    };
+
+    bool allGranted = allPermissions.values.every((status) =>
+        status == PermissionStatus.granted ||
+        status == PermissionStatus.limited);
 
     print("🔍 [DEBUG] 모든 권한 허용됨: $allGranted");
 
     if (!allGranted) {
       print("🔍 [DEBUG] 권한이 부족함");
-      
+
       // 영구 거부된 권한이 있는지 확인
-      bool hasPermanentlyDenied = allPermissions.values.any((status) => 
-        status == PermissionStatus.permanentlyDenied);
-      
+      bool hasPermanentlyDenied = allPermissions.values
+          .any((status) => status == PermissionStatus.permanentlyDenied);
+
       if (hasPermanentlyDenied && mounted) {
         // 영구 거부된 경우 설정으로 이동하는 버튼 표시
         showDialog(
@@ -225,7 +230,8 @@ class _MyHomePageState extends State<MyHomePage> {
           builder: (BuildContext context) {
             return AlertDialog(
               title: const Text('권한 필요'),
-              content: const Text('블루투스 프린터를 사용하기 위해 블루투스 및 위치 권한이 필요합니다.\n\n설정에서 다음을 확인해주세요:\n• 설정 > 개인정보 보호 및 보안 > 블루투스\n• 설정 > 개인정보 보호 및 보안 > 위치 서비스'),
+              content: const Text(
+                  '블루투스 프린터를 사용하기 위해 블루투스 및 위치 권한이 필요합니다.\n\n설정에서 다음을 확인해주세요:\n• 설정 > 개인정보 보호 및 보안 > 블루투스\n• 설정 > 개인정보 보호 및 보안 > 위치 서비스'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -259,10 +265,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _searchDevices() async {
     print("🔍 [DEBUG] _searchDevices() 시작");
-    
+
     // 권한 요청 제거 - 레퍼런스 앱처럼 바로 스캔 시도
     print("🔍 [DEBUG] 권한 요청 없이 바로 스캔 시작");
-    
+
     setState(() {
       _isScanning = true;
       _devices = [];
@@ -272,19 +278,20 @@ class _MyHomePageState extends State<MyHomePage> {
       print("🔍 [DEBUG] 플러그인 호출: searchDevices() 시작");
       final devices = await _blueberryPrinterPlugin.searchDevices();
       print("🔍 [DEBUG] 플러그인 응답 받음: ${devices.length}개 기기");
-      
+
       // 각 기기 정보 출력
       for (int i = 0; i < devices.length; i++) {
         final device = devices[i];
-        print("🔍 [DEBUG] 기기 ${i + 1}: ${device['name']} (${device['address']})");
+        print(
+            "🔍 [DEBUG] 기기 ${i + 1}: ${device['name']} (${device['address']})");
       }
-      
+
       setState(() {
         _devices = devices;
       });
-      
+
       print("🔍 [DEBUG] UI 업데이트 완료: ${_devices.length}개 기기 표시");
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${devices.length}개의 기기를 찾았습니다')),
@@ -325,7 +332,7 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       print("🔍 [DEBUG] Flutter: 연결 실패 - $e");
       print("🔍 [DEBUG] Flutter: 오류 타입 - ${e.runtimeType}");
-      
+
       String errorMessage = '연결 실패';
       if (e.toString().contains('NO_CHARACTERISTIC')) {
         errorMessage = '프린터 출력 특성을 찾을 수 없습니다. 다른 프린터를 시도해보세요.';
@@ -334,7 +341,7 @@ class _MyHomePageState extends State<MyHomePage> {
       } else if (e.toString().contains('DEVICE_NOT_FOUND')) {
         errorMessage = '기기를 찾을 수 없습니다. 스캔을 다시 시도해주세요.';
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -428,7 +435,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-
   /// 구조화된 주문 영수증 출력
   Future<void> _printOrderReceipt() async {
     print('🔍 [DEBUG] 구조화된 주문 영수증 출력 시작');
@@ -453,7 +459,8 @@ class _MyHomePageState extends State<MyHomePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '구조화된 주문 영수증 출력이 완료되었습니다' : '구조화된 주문 영수증 출력에 실패했습니다'),
+            content: Text(
+                success ? '구조화된 주문 영수증 출력이 완료되었습니다' : '구조화된 주문 영수증 출력에 실패했습니다'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -475,15 +482,16 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _printCumulativeOrderReceipt() async {
     try {
       print('🔍 [DEBUG] 누적 주문 영수증 출력 시작');
-      
+
       // 샘플 전체 주문 데이터 가져오기
       final cumulativeOrderData = DummyDirectPrintData.getTotalOrderData();
-      
-      print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
-      
+
+      print(
+          '🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
+
       // 업데이트된 iOS 네이티브 코드가 Flutter 모델 구조를 직접 처리함
       print('🔍 [DEBUG] 주문 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
-      
+
       // 전체 주문 영수증 출력
       bool success = await _blueberryPrinterPlugin.printTotalOrder(
         cumulativeOrderData, // OrderHistoryTotalResponse 객체 그대로 사용
@@ -496,7 +504,7 @@ class _MyHomePageState extends State<MyHomePage> {
         language: 'kor',
         currency: 'KRW',
       );
-      
+
       if (success) {
         print('🔍 [DEBUG] 누적 주문 영수증 출력 성공');
         if (mounted) {
@@ -557,7 +565,8 @@ class _MyHomePageState extends State<MyHomePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '직접 출력 단일 주문 영수증 출력 완료' : '직접 출력 단일 주문 영수증 출력 실패'),
+            content: Text(
+                success ? '직접 출력 단일 주문 영수증 출력 완료' : '직접 출력 단일 주문 영수증 출력 실패'),
             backgroundColor: success ? Colors.teal : Colors.red,
           ),
         );
@@ -583,7 +592,8 @@ class _MyHomePageState extends State<MyHomePage> {
       final directTotalOrderData = DummyDirectPrintData.getTotalOrderData();
 
       print('🔍 [DEBUG] 네이티브 함수 호출 전: printTotalOrder (Direct)');
-      print('🔍 [DEBUG] 전달할 데이터 - 메뉴 수: ${directTotalOrderData.orderMenus.length}');
+      print(
+          '🔍 [DEBUG] 전달할 데이터 - 메뉴 수: ${directTotalOrderData.orderMenus.length}');
 
       final success = await _blueberryPrinterPlugin.printTotalOrder(
         directTotalOrderData,
@@ -601,7 +611,8 @@ class _MyHomePageState extends State<MyHomePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '직접 출력 전체 주문 영수증 출력 완료' : '직접 출력 전체 주문 영수증 출력 실패'),
+            content: Text(
+                success ? '직접 출력 전체 주문 영수증 출력 완료' : '직접 출력 전체 주문 영수증 출력 실패'),
             backgroundColor: success ? Colors.cyan : Colors.red,
           ),
         );
@@ -634,7 +645,8 @@ class _MyHomePageState extends State<MyHomePage> {
               _showErrorHistoryDialog();
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -690,7 +702,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 subtitle: Text(_platformVersion),
               ),
             ),
-            
+
             SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
             // 기기 검색 및 연결 버튼
@@ -723,14 +735,15 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
 
             SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-            
+
             // 영수증 출력 버튼들
             if (_isConnected) ...[
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
               Card(
                 color: Colors.blue.withAlpha(50),
                 child: Padding(
-                  padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                  padding:
+                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                   child: Column(
                     children: [
                       const Text(
@@ -740,7 +753,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.02),
                       ElevatedButton.icon(
                         onPressed: _printTextSample,
                         icon: const Icon(Icons.text_fields),
@@ -760,7 +774,8 @@ class _MyHomePageState extends State<MyHomePage> {
               Card(
                 color: Colors.teal.withAlpha(50),
                 child: Padding(
-                  padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                  padding:
+                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
                   child: Column(
                     children: [
                       const Row(
@@ -785,7 +800,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           color: Colors.grey,
                         ),
                       ),
-                      SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                      SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.02),
                       Column(
                         children: [
                           SizedBox(
@@ -800,7 +816,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                             ),
                           ),
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.015),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
@@ -873,13 +891,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       itemBuilder: (context, index) {
                         final error = _errorHistory[index];
                         return ListTile(
-                          leading: const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                          leading: const Icon(Icons.error_outline,
+                              color: Colors.red, size: 20),
                           title: Text(error.message),
                           subtitle: Text(
                             _formatTimestamp(error.timestamp),
                             style: const TextStyle(fontSize: 12),
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           dense: true,
                         );
                       },
@@ -971,7 +991,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 subtitle: Text(deviceAddress),
                                 onTap: () async {
                                   Navigator.of(dialogContext).pop();
-                                  await _connectDevice(deviceAddress, deviceName);
+                                  await _connectDevice(
+                                      deviceAddress, deviceName);
                                 },
                               );
                             },

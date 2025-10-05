@@ -12,6 +12,8 @@ import com.example.blueberry_printer.sample_receipt.SimpleTextPrinter
 import com.example.blueberry_printer.printer_connection.RealtimeConnectionChecker
 import com.example.blueberry_printer.single_order.SingleOrderDirectPrinter
 import com.example.blueberry_printer.multiple_order.MultipleOrderDirectPrinter
+import com.example.blueberry_printer.bluetooth_search.BluetoothDeviceSearcher
+import com.example.blueberry_printer.common.DisconnectReason
 import io.flutter.plugin.common.EventChannel
 import android.os.Handler
 import android.os.Looper
@@ -59,28 +61,15 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         result.success("Android ${android.os.Build.VERSION.RELEASE}")
       }
       "searchDevices" -> {
-        val bluetoothAdapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter()
-        if (bluetoothAdapter == null) {
-          result.error("NO_ADAPTER", "블루투스 미지원 기기", null)
-          return
-        }
-        // 권한 체크 (Android 12 이상)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-          val context = channel.javaClass.classLoader?.loadClass("io.flutter.embedding.engine.FlutterEngine")
-          // 실제 앱에서는 ActivityCompat.checkSelfPermission을 사용해야 함
-          // 여기서는 간단히 예시로만 처리
-        }
-        if (!bluetoothAdapter.isEnabled) {
-          result.error("NOT_ENABLED", "블루투스가 비활성화되어 있습니다", null)
-          return
-        }
-        
         try {
-          val pairedDevices = bluetoothAdapter.bondedDevices ?: emptySet()
-          val deviceList = pairedDevices.map {
-            mapOf("name" to (it.name ?: "알 수 없는 기기"), "address" to it.address)
-          }
+          val deviceList = BluetoothDeviceSearcher.searchPairedDevices()
           result.success(deviceList)
+        } catch (e: BluetoothDeviceSearcher.BluetoothNotSupportedException) {
+          result.error("NO_ADAPTER", e.message, null)
+        } catch (e: BluetoothDeviceSearcher.BluetoothNotEnabledException) {
+          result.error("NOT_ENABLED", e.message, null)
+        } catch (e: BluetoothDeviceSearcher.BluetoothSearchException) {
+          result.error("SEARCH_FAIL", e.message, null)
         } catch (e: Exception) {
           result.error("SEARCH_FAIL", "검색 실패: ${e.message}", null)
         }
@@ -91,21 +80,13 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
           result.error("NO_ADDRESS", "기기 주소가 필요합니다", null)
           return
         }
-        val bluetoothAdapter = android.bluetooth.BluetoothAdapter.getDefaultAdapter()
-        if (bluetoothAdapter == null) {
-          result.error("NO_ADAPTER", "블루투스 미지원 기기", null)
-          return
-        }
-        if (!bluetoothAdapter.isEnabled) {
-          result.error("NOT_ENABLED", "블루투스가 비활성화되어 있습니다", null)
-          return
-        }
-        val device = bluetoothAdapter.bondedDevices.firstOrNull { it.address == address }
-        if (device == null) {
-          result.error("NOT_FOUND", "기기를 찾을 수 없습니다", null)
-          return
-        }
+
         try {
+          // BluetoothDeviceSearcher를 사용하여 기기 찾기
+          val device = BluetoothDeviceSearcher.findDeviceByAddress(address)
+          val bluetoothAdapter = BluetoothDeviceSearcher.getBluetoothAdapter()
+
+          // 소켓 연결
           val uuid = device.uuids?.firstOrNull()?.uuid
             ?: java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
           val socket = device.createRfcommSocketToServiceRecord(uuid)
@@ -120,6 +101,12 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
           startConnectionMonitoring(socket)
 
           result.success(true)
+        } catch (e: BluetoothDeviceSearcher.BluetoothNotSupportedException) {
+          result.error("NO_ADAPTER", e.message, null)
+        } catch (e: BluetoothDeviceSearcher.BluetoothNotEnabledException) {
+          result.error("NOT_ENABLED", e.message, null)
+        } catch (e: BluetoothDeviceSearcher.DeviceNotFoundException) {
+          result.error("NOT_FOUND", e.message, null)
         } catch (e: Exception) {
           result.error("CONNECT_FAIL", "연결 실패: ${e.message}", null)
         }
@@ -303,23 +290,23 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         heartbeatIntervalMs = 5000, // 5초마다 Heartbeat
         socketTimeoutMs = 3000, // 3초 타임아웃
         onConnectionLost = { reason ->
-          Log.w("BridgeFlutterPlugin", "프린터 연결이 끊겼습니다: $reason")
+          Log.w("BridgeFlutterPlugin", "Printer connection lost: ${reason.code}")
           // UI 스레드에서 Flutter로 연결 끊김 알림
           mainHandler.post {
             eventSink?.success(mapOf(
               "status" to "disconnected",
-              "message" to "프린터 연결이 끊겼습니다: $reason",
-              "reason" to reason
+              "message" to "", // 빈 문자열 - 앱에서 다국어 처리
+              "reason" to reason.code
             ))
           }
         },
         onConnectionRestored = {
-          Log.i("BridgeFlutterPlugin", "프린터 연결이 복구되었습니다")
+          Log.i("BridgeFlutterPlugin", "Printer connection restored")
           // UI 스레드에서 Flutter로 연결 복구 알림
           mainHandler.post {
             eventSink?.success(mapOf(
               "status" to "connected",
-              "message" to "프린터 연결이 복구되었습니다"
+              "message" to "" // 빈 문자열 - 앱에서 다국어 처리
             ))
           }
         }
@@ -332,7 +319,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
       mainHandler.post {
         eventSink?.success(mapOf(
           "status" to "connected",
-          "message" to "프린터가 연결되었습니다"
+          "message" to "" // 빈 문자열 - 앱에서 다국어 처리
         ))
       }
     } catch (e: Exception) {

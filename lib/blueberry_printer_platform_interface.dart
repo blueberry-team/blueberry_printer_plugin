@@ -3,6 +3,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'blueberry_printer_method_channel.dart';
 import 'models/order_detail_response.dart';
 import 'models/order_history_total_response.dart';
+import 'models/connection_status.dart';
 
 abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// Constructs a BlueberryPrinterPlatform.
@@ -98,5 +99,10 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     String currency = 'KRW',
   }) {
     throw UnimplementedError('printTotalOrder() has not been implemented.');
+  }
+
+  /// 실시간 프린터 연결 상태 스트림
+  Stream<ConnectionStatus> get connectionStatusStream {
+    throw UnimplementedError('connectionStatusStream has not been implemented.');
   }
 }

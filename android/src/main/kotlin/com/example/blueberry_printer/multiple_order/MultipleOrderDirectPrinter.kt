@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.blueberry_printer.common.EscPosConstants
 import com.example.blueberry_printer.common.PrinterCommands
 import com.example.blueberry_printer.common.KoreanTextRenderer
+import com.example.blueberry_printer.common.PrintConstants
 
 /**
  * 전체 주문(누적) 영수증을 텍스트 파싱 없이 직접 출력하는 클래스
@@ -91,19 +92,19 @@ object MultipleOrderDirectPrinter {
             printMergedMenuList(outputStream, orderVersions, currency, localizer)
 
             // 줄바꿈
-            feedPaper(outputStream, 2)
+            feedPaper(outputStream, PrintConstants.LineFeed.BEFORE_TOTAL)
 
             // 총 합계 출력
             printGrandTotal(outputStream, grandTotalPrice, currency, localizer)
 
             // 줄바꿈
-            feedPaper(outputStream, 2)
+            feedPaper(outputStream, PrintConstants.LineFeed.AFTER_TOTAL)
 
             // 감사 메시지 출력
             printThankYouMessage(outputStream, thankYouMessage, localizer)
 
             // 줄바꿈
-            feedPaper(outputStream, 3)
+            feedPaper(outputStream, PrintConstants.LineFeed.AFTER_THANK_YOU)
 
             // 영수증 자르기
             cutPaper(outputStream)
@@ -122,7 +123,7 @@ object MultipleOrderDirectPrinter {
     private fun printTitle(outputStream: OutputStream, storeName: String) {
         val image = KoreanTextRenderer.createTextImage(
             storeName,
-            80f,
+            PrintConstants.FontSize.TITLE,
             true,
             KoreanTextRenderer.TextAlign.CENTER
         )
@@ -130,7 +131,7 @@ object MultipleOrderDirectPrinter {
         outputStream.write(bitmap)
         outputStream.flush()
 
-        feedPaper(outputStream, 1)
+        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_TITLE)
     }
 
     /**
@@ -158,7 +159,7 @@ object MultipleOrderDirectPrinter {
 
             val image = KoreanTextRenderer.createTextImage(
                 sb.toString().trim(),
-                20f,
+                PrintConstants.FontSize.STORE_INFO,
                 false,
                 KoreanTextRenderer.TextAlign.CENTER
             )
@@ -166,7 +167,7 @@ object MultipleOrderDirectPrinter {
             outputStream.write(bitmap)
             outputStream.flush()
 
-            feedPaper(outputStream, 1)
+            feedPaper(outputStream, PrintConstants.LineFeed.AFTER_STORE_INFO)
         }
     }
 
@@ -174,11 +175,9 @@ object MultipleOrderDirectPrinter {
      * 구분선 출력
      */
     private fun printSeparator(outputStream: OutputStream) {
-        val separatorText = "================================"
-
         val image = KoreanTextRenderer.createTextImage(
-            separatorText,
-            20f,
+            PrintConstants.SEPARATOR_LINE,
+            PrintConstants.FontSize.SEPARATOR,
             false,
             KoreanTextRenderer.TextAlign.CENTER
         )
@@ -186,7 +185,7 @@ object MultipleOrderDirectPrinter {
         outputStream.write(bitmap)
         outputStream.flush()
 
-        feedPaper(outputStream, 1)
+        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_SEPARATOR)
     }
 
     /**
@@ -205,7 +204,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             orderInfoText,
-            20f,
+            PrintConstants.FontSize.ORDER_INFO,
             false,
             KoreanTextRenderer.TextAlign.CENTER
         )
@@ -213,7 +212,7 @@ ${localizer.getText("table")}: $tableName
         outputStream.write(bitmap)
         outputStream.flush()
 
-        feedPaper(outputStream, 1)
+        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_ORDER_INFO)
     }
 
     /**
@@ -345,7 +344,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             sb.toString().trim(),
-            20f,
+            PrintConstants.FontSize.MENU_LIST,
             false,
             KoreanTextRenderer.TextAlign.LEFT
         )
@@ -368,7 +367,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             totalText,
-            20f,
+            PrintConstants.FontSize.TOTAL,
             true,
             KoreanTextRenderer.TextAlign.RIGHT
         )
@@ -389,7 +388,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             message,
-            20f,
+            PrintConstants.FontSize.THANK_YOU,
             false,
             KoreanTextRenderer.TextAlign.CENTER
         )
@@ -412,7 +411,7 @@ ${localizer.getText("table")}: $tableName
      * 영수증 자르기
      */
     private fun cutPaper(outputStream: OutputStream) {
-        outputStream.write(PrinterCommands.POS_Set_PrtAndFeedPaper(200))
+        outputStream.write(PrinterCommands.POS_Set_PrtAndFeedPaper(PrintConstants.LineFeed.BEFORE_CUT))
         outputStream.write(EscPosConstants.GS_V_n)
         outputStream.flush()
     }

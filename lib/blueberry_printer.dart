@@ -8,6 +8,7 @@
 import 'blueberry_printer_platform_interface.dart';
 import 'models/order_detail_response.dart';
 import 'models/order_history_total_response.dart';
+import 'models/connection_status.dart';
 
 class BlueberryPrinter {
   Future<String?> getPlatformVersion() {
@@ -114,5 +115,23 @@ class BlueberryPrinter {
       language: language,
       currency: currency,
     );
+  }
+
+  /// 실시간 프린터 연결 상태 스트림
+  /// 연결 상태가 변경될 때마다 [ConnectionStatus] 객체가 전달됩니다.
+  ///
+  /// 사용 예시:
+  /// ```dart
+  /// final printer = BlueberryPrinter();
+  /// printer.connectionStatusStream.listen((status) {
+  ///   if (status.isConnected) {
+  ///     print('프린터 연결됨: ${status.message}');
+  ///   } else {
+  ///     print('프린터 연결 끊김: ${status.message}, 이유: ${status.reason}');
+  ///   }
+  /// });
+  /// ```
+  Stream<ConnectionStatus> get connectionStatusStream {
+    return BlueberryPrinterPlatform.instance.connectionStatusStream;
   }
 }
