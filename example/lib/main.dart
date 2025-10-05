@@ -5,6 +5,7 @@ import 'package:blueberry_printer/blueberry_printer.dart';
 import 'sample_receipts.dart';
 import 'sample_single_order_data.dart';
 import 'sample_total_order_data.dart';
+import 'dummy_direct_print_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 
@@ -537,6 +538,94 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// 직접 출력 방식 - 단일 주문 영수증
+  Future<void> _printDirectSingleOrder() async {
+    print('🔍 [DEBUG] 직접 출력 방식 - 단일 주문 영수증 출력 시작');
+    try {
+      // 더미 데이터 가져오기
+      final directOrderData = DummyDirectPrintData.getSingleOrderData();
+
+      print('🔍 [DEBUG] 네이티브 함수 호출 전: printSingleOrder (Direct)');
+      print('🔍 [DEBUG] 전달할 데이터: ${directOrderData.toJson()}');
+
+      final success = await _blueberryPrinterPlugin.printSingleOrder(
+        directOrderData,
+        storeName: '블루베리 카페 (Direct)',
+        tableNumber: '테이블 7번',
+        storeAddress: '서울특별시 서초구 서초대로 78길 15',
+        phoneNumber: '02-8899-7766',
+        businessNumber: '555-88-99123',
+        thankYouMessage: '직접 출력 방식으로 출력되었습니다!\n감사합니다.',
+        language: 'kor',
+        currency: 'KRW',
+      );
+
+      print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '직접 출력 단일 주문 영수증 출력 완료' : '직접 출력 단일 주문 영수증 출력 실패'),
+            backgroundColor: success ? Colors.teal : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('🔍 [DEBUG] 직접 출력 단일 주문 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('직접 출력 단일 주문 영수증 출력 오류: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 직접 출력 방식 - 전체 주문 영수증
+  Future<void> _printDirectTotalOrder() async {
+    print('🔍 [DEBUG] 직접 출력 방식 - 전체 주문 영수증 출력 시작');
+    try {
+      // 더미 데이터 가져오기
+      final directTotalOrderData = DummyDirectPrintData.getTotalOrderData();
+
+      print('🔍 [DEBUG] 네이티브 함수 호출 전: printTotalOrder (Direct)');
+      print('🔍 [DEBUG] 전달할 데이터 - 메뉴 수: ${directTotalOrderData.orderMenus.length}');
+
+      final success = await _blueberryPrinterPlugin.printTotalOrder(
+        directTotalOrderData,
+        storeName: '블루베리 카페 본점 (Direct)',
+        tableNumber: 'VIP-99',
+        storeAddress: '서울특별시 강남구 테헤란로 427',
+        phoneNumber: '02-3456-7890',
+        businessNumber: '123-45-67890',
+        thankYouMessage: '직접 출력 방식 전체 주문!\n항상 감사드립니다.',
+        language: 'kor',
+        currency: 'KRW',
+      );
+
+      print('🔍 [DEBUG] 네이티브 함수 호출 결과: $success');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '직접 출력 전체 주문 영수증 출력 완료' : '직접 출력 전체 주문 영수증 출력 실패'),
+            backgroundColor: success ? Colors.cyan : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('🔍 [DEBUG] 직접 출력 전체 주문 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('직접 출력 전체 주문 영수증 출력 오류: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -659,44 +748,79 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _printSampleReceipt,
+                              icon: const Icon(Icons.receipt),
+                              label: const Text('샘플 영수증'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: MediaQuery.of(context).size.width * 0.02),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _printCustomReceipt,
+                              icon: const Icon(Icons.print),
+                              label: const Text('커스텀 영수증'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 새로운 직접 출력 방식 테스트 버튼들
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+              Card(
+                color: Colors.teal.withAlpha(50),
+                child: Padding(
+                  padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                  child: Column(
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.new_releases, color: Colors.teal),
+                          SizedBox(width: 8),
+                          Text(
+                            '직접 출력 방식 (New)',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.teal,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '텍스트 파싱 없이 직접 출력하는 새로운 방식',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.02),
                       Column(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _printSampleReceipt,
-                                  icon: const Icon(Icons.receipt),
-                                  label: const Text('샘플 영수증'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: _printCustomReceipt,
-                                  icon: const Icon(Icons.print),
-                                  label: const Text('커스텀 영수증'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: MediaQuery.of(context).size.height * 0.015),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _printOrderReceipt,
-                              icon: const Icon(Icons.receipt_long),
-                              label: const Text('단일 주문 영수증 (점포용)'),
+                              onPressed: _printDirectSingleOrder,
+                              icon: const Icon(Icons.bolt),
+                              label: const Text('단일 주문 (Direct)'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.purple,
+                                backgroundColor: Colors.teal,
                                 foregroundColor: Colors.white,
                               ),
                             ),
@@ -705,11 +829,11 @@ class _MyHomePageState extends State<MyHomePage> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: _printCumulativeOrderReceipt,
-                              icon: const Icon(Icons.layers),
-                              label: const Text('전체 주문 영수증 (모든 버전)'),
+                              onPressed: _printDirectTotalOrder,
+                              icon: const Icon(Icons.flash_on),
+                              label: const Text('전체 주문 (Direct)'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.orange,
+                                backgroundColor: Colors.cyan,
                                 foregroundColor: Colors.white,
                               ),
                             ),

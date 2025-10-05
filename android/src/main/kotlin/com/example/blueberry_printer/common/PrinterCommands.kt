@@ -1,8 +1,8 @@
-package com.example.blueberry_printer.hardware
+package com.example.blueberry_printer.common
 
 import java.io.UnsupportedEncodingException
 
-class HardwarePrinterCommands {
+class PrinterCommands {
 
     companion object {
         const val KOREAN = "EUC-KR"
@@ -13,7 +13,7 @@ class HardwarePrinterCommands {
          * @return
          */
         fun POS_Set_PrtInit(): ByteArray {
-            return HardwareUtilities.byteArraysToBytes(arrayOf(HardwareEscPosConstants.ESC_Init))
+            return PrinterUtilities.byteArraysToBytes(arrayOf(EscPosConstants.ESC_Init))
         }
 
         /**
@@ -25,9 +25,9 @@ class HardwarePrinterCommands {
         fun POS_Set_PrtAndFeedPaper(feed: Int): ByteArray? {
             if (feed > 255 || feed < 0) return null
 
-            HardwareEscPosConstants.ESC_J[2] = feed.toByte()
+            EscPosConstants.ESC_J[2] = feed.toByte()
 
-            return HardwareUtilities.byteArraysToBytes(arrayOf(HardwareEscPosConstants.ESC_J))
+            return PrinterUtilities.byteArraysToBytes(arrayOf(EscPosConstants.ESC_J))
         }
 
         /**

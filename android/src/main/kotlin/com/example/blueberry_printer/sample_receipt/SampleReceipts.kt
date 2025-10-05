@@ -1,6 +1,6 @@
-package com.example.blueberry_printer.data
+package com.example.blueberry_printer.sample_receipt
 
-object DataSampleReceipts {
+object SampleReceipts {
     
     // 개별 섹션 텍스트 데이터
     const val TITLE_TEXT = "*** 영수증 ***"

@@ -8,9 +8,11 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.bluetooth.BluetoothSocket
 import java.io.OutputStream
 import android.util.Log
-import com.example.blueberry_printer.data.DataSampleReceipts
-import com.example.blueberry_printer.logic.LogicReceiptProcessor
-import com.example.blueberry_printer.hardware.RealtimeConnectionChecker
+import com.example.blueberry_printer.sample_receipt.SampleReceipts
+import com.example.blueberry_printer.common.ReceiptProcessor
+import com.example.blueberry_printer.printer_connection.RealtimeConnectionChecker
+import com.example.blueberry_printer.single_order.SingleOrderDirectPrinter
+import com.example.blueberry_printer.multiple_order.MultipleOrderDirectPrinter
 import io.flutter.plugin.common.EventChannel
 import android.os.Handler
 import android.os.Looper
@@ -138,7 +140,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         
         try {
           Log.d("BridgeFlutterPlugin", "커스텀 영수증 출력 시작: $receiptText")
-          LogicReceiptProcessor.parseAndPrint(stream, receiptText)
+          ReceiptProcessor.parseAndPrint(stream, receiptText)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "커스텀 영수증 출력 실패", e)
@@ -155,7 +157,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         try {
           Log.d("BridgeFlutterPlugin", "샘플 영수증 출력 시작")
           // 샘플 영수증도 동일한 방식으로 처리
-          LogicReceiptProcessor.parseAndPrint(stream, DataSampleReceipts.sampleReceiptData)
+          ReceiptProcessor.parseAndPrint(stream, SampleReceipts.sampleReceiptData)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "샘플 영수증 출력 실패", e)
@@ -190,13 +192,11 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         }
         
         try {
-          Log.d("BridgeFlutterPlugin", "단일 주문 영수증 출력 시작")
-          val formattedReceipt = LogicReceiptProcessor.formatSingleOrderReceipt(
-            orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
+          Log.d("BridgeFlutterPlugin", "단일 주문 영수증 출력 시작 (Direct Printer)")
+          // 새로운 직접 출력 방식 사용
+          SingleOrderDirectPrinter.print(
+            stream, orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
           )
-          Log.d("BridgeFlutterPlugin", "생성된 영수증 포맷: \n$formattedReceipt")
-          Log.d("BridgeFlutterPlugin", "영수증 포맷 길이: ${formattedReceipt.length}")
-          LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "단일 주문 영수증 출력 실패", e)
@@ -230,13 +230,11 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         }
         
         try {
-          Log.d("BridgeFlutterPlugin", "전체 주문 영수증 출력 시작")
-          val formattedReceipt = LogicReceiptProcessor.formatTotalOrderReceipt(
-            orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
+          Log.d("BridgeFlutterPlugin", "전체 주문 영수증 출력 시작 (Direct Printer)")
+          // 새로운 직접 출력 방식 사용
+          MultipleOrderDirectPrinter.print(
+            stream, orderData, storeName, tableNumber, storeAddress, phoneNumber, businessNumber, thankYouMessage, language, currency
           )
-          Log.d("BridgeFlutterPlugin", "생성된 전체 영수증 포맷: \n$formattedReceipt")
-          Log.d("BridgeFlutterPlugin", "전체 영수증 포맷 길이: ${formattedReceipt.length}")
-          LogicReceiptProcessor.parseAndPrint(stream, formattedReceipt)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "전체 주문 영수증 출력 실패", e)

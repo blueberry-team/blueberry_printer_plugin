@@ -1,6 +1,6 @@
-package com.example.blueberry_printer.hardware
+package com.example.blueberry_printer.common
 
-class HardwareEscPosConstants {
+class EscPosConstants {
 
     companion object {
         private const val ESC: Byte = 0x1B

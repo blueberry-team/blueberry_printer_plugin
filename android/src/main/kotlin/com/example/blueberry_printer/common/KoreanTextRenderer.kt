@@ -1,14 +1,12 @@
-package com.example.blueberry_printer.logic
+package com.example.blueberry_printer.common
 
 import android.graphics.*
 import android.util.Log
 import java.io.IOException
 import java.io.OutputStream
-import com.example.blueberry_printer.data.DataSampleReceipts
-import com.example.blueberry_printer.hardware.HardwarePrinterCommands
 
-object RenderKoreanTextToImage {
-    private const val TAG = "RenderKoreanTextToImage"
+object KoreanTextRenderer {
+    private const val TAG = "KoreanTextRenderer"
 
     // 텍스트 정렬 enum
     enum class TextAlign {
@@ -79,6 +77,6 @@ object RenderKoreanTextToImage {
             }
         }
 
-        return HardwarePrinterCommands.POS_Print_Bitmap(imageData, width, height)
+        return PrinterCommands.POS_Print_Bitmap(imageData, width, height)
     }
 } 

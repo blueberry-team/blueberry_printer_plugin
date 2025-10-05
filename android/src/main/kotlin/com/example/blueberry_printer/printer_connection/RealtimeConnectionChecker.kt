@@ -1,4 +1,4 @@
-package com.example.blueberry_printer.hardware
+package com.example.blueberry_printer.printer_connection
 
 import android.bluetooth.BluetoothSocket
 import android.util.Log

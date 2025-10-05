@@ -1,15 +1,11 @@
-package com.example.blueberry_printer.logic
+package com.example.blueberry_printer.common
 
 import java.io.OutputStream
 import android.util.Log
 import kotlin.text.Charsets
-import com.example.blueberry_printer.hardware.HardwareEscPosConstants
-import com.example.blueberry_printer.hardware.HardwareUtilities
-import com.example.blueberry_printer.logic.RenderKoreanTextToImage
-import com.example.blueberry_printer.data.DataSampleReceipts
-import com.example.blueberry_printer.hardware.HardwarePrinterCommands
+import com.example.blueberry_printer.sample_receipt.SampleReceipts
 
-object LogicReceiptProcessor {
+object ReceiptProcessor {
         private const val TAG = "LogicReceiptProcessor"
         
         /**
@@ -560,7 +556,7 @@ object LogicReceiptProcessor {
         // 프린터 초기화
         fun initialize(outputStream: OutputStream) {
             try {
-                outputStream.write(HardwarePrinterCommands.POS_Set_PrtInit())
+                outputStream.write(PrinterCommands.POS_Set_PrtInit())
             } catch (e: Exception) {
                 Log.e(TAG, "프린터 초기화 오류: ${e.message}")
             }
@@ -569,13 +565,13 @@ object LogicReceiptProcessor {
         // 타이틀 출력
         fun printTitle(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.TITLE_TEXT, 
-                    24f, 
-                    true, 
-                    RenderKoreanTextToImage.TextAlign.CENTER
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.TITLE_TEXT,
+                    24f,
+                    true,
+                    KoreanTextRenderer.TextAlign.CENTER
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "타이틀 출력 오류: ${e.message}")
@@ -585,13 +581,13 @@ object LogicReceiptProcessor {
         // 매장정보 출력
         fun printStoreInfo(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.STORE_INFO_TEXT, 
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.STORE_INFO_TEXT, 
                     16f, 
                     false, 
-                    RenderKoreanTextToImage.TextAlign.CENTER
+                    KoreanTextRenderer.TextAlign.CENTER
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "매장정보 출력 오류: ${e.message}")
@@ -601,13 +597,13 @@ object LogicReceiptProcessor {
         // 구분선 출력
         fun printSeparator(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.SEPARATOR_TEXT, 
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.SEPARATOR_TEXT, 
                     14f, 
                     false, 
-                    RenderKoreanTextToImage.TextAlign.CENTER
+                    KoreanTextRenderer.TextAlign.CENTER
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "구분선 출력 오류: ${e.message}")
@@ -617,13 +613,13 @@ object LogicReceiptProcessor {
         // 상품목록 출력
         fun printItems(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.ITEMS_TEXT, 
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.ITEMS_TEXT, 
                     14f, 
                     false, 
-                    RenderKoreanTextToImage.TextAlign.LEFT
+                    KoreanTextRenderer.TextAlign.LEFT
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "상품목록 출력 오류: ${e.message}")
@@ -633,13 +629,13 @@ object LogicReceiptProcessor {
         // 합계 출력
         fun printTotal(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.TOTAL_TEXT, 
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.TOTAL_TEXT, 
                     16f, 
                     true, 
-                    RenderKoreanTextToImage.TextAlign.RIGHT
+                    KoreanTextRenderer.TextAlign.RIGHT
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "합계 출력 오류: ${e.message}")
@@ -649,13 +645,13 @@ object LogicReceiptProcessor {
         // 감사메시지 출력
         fun printThankYou(outputStream: OutputStream) {
             try {
-                val image = RenderKoreanTextToImage.createTextImage(
-                    DataSampleReceipts.THANK_YOU_TEXT, 
+                val image = KoreanTextRenderer.createTextImage(
+                    SampleReceipts.THANK_YOU_TEXT, 
                     16f, 
                     false, 
-                    RenderKoreanTextToImage.TextAlign.CENTER
+                    KoreanTextRenderer.TextAlign.CENTER
                 )
-                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                 outputStream.write(bitmap)
             } catch (e: Exception) {
                 Log.e(TAG, "감사메시지 출력 오류: ${e.message}")
@@ -665,7 +661,7 @@ object LogicReceiptProcessor {
         // 줄바꿈
         fun feedPaper(outputStream: OutputStream, lines: Int = 1) {
             try {
-                val feedCommand = HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(lines)
+                val feedCommand = PrinterCommands.POS_Set_PrtAndFeedPaper(lines)
                 if (feedCommand != null) {
                     outputStream.write(feedCommand)
                 }
@@ -677,8 +673,8 @@ object LogicReceiptProcessor {
         // 영수증 자르기
         fun cutPaper(outputStream: OutputStream) {
             try {
-                outputStream.write(HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(200))
-                outputStream.write(HardwareEscPosConstants.GS_V_n)
+                outputStream.write(PrinterCommands.POS_Set_PrtAndFeedPaper(200))
+                outputStream.write(EscPosConstants.GS_V_n)
                 outputStream.flush()
                 
             } catch (e: Exception) {
@@ -693,7 +689,7 @@ object LogicReceiptProcessor {
                 Log.d(TAG, "영수증 텍스트 길이: ${receiptText.length}")
                 
                 // 프린터 초기화
-                outputStream.write(HardwarePrinterCommands.POS_Set_PrtInit())
+                outputStream.write(PrinterCommands.POS_Set_PrtInit())
                 Log.d(TAG, "프린터 초기화 완료")
                 
                 val lines = receiptText.split("\n")
@@ -747,21 +743,21 @@ object LogicReceiptProcessor {
                                 
                                 // 섹션별 기본 설정 - 폰트 크기 조정
                                 val sectionSettings = mapOf(
-                                    "타이틀" to Triple(true, RenderKoreanTextToImage.TextAlign.CENTER, 20f), // 타이틀 폰트 축소 (24f -> 20f)
-                                    "매장정보" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 18f), // 폰트 크기 증가 (16f -> 18f)
-                                    "구분선" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 16f), // 폰트 크기 증가 (14f -> 16f)
-                                    "상품목록" to Triple(false, RenderKoreanTextToImage.TextAlign.LEFT, 16f), // 폰트 크기 증가 (14f -> 16f)
-                                    "합계" to Triple(true, RenderKoreanTextToImage.TextAlign.RIGHT, 18f), // 폰트 크기 증가 (16f -> 18f)
-                                    "감사메시지" to Triple(false, RenderKoreanTextToImage.TextAlign.CENTER, 18f) // 폰트 크기 증가 (16f -> 18f)
+                                    "타이틀" to Triple(true, KoreanTextRenderer.TextAlign.CENTER, 20f), // 타이틀 폰트 축소 (24f -> 20f)
+                                    "매장정보" to Triple(false, KoreanTextRenderer.TextAlign.CENTER, 18f), // 폰트 크기 증가 (16f -> 18f)
+                                    "구분선" to Triple(false, KoreanTextRenderer.TextAlign.CENTER, 16f), // 폰트 크기 증가 (14f -> 16f)
+                                    "상품목록" to Triple(false, KoreanTextRenderer.TextAlign.LEFT, 16f), // 폰트 크기 증가 (14f -> 16f)
+                                    "합계" to Triple(true, KoreanTextRenderer.TextAlign.RIGHT, 18f), // 폰트 크기 증가 (16f -> 18f)
+                                    "감사메시지" to Triple(false, KoreanTextRenderer.TextAlign.CENTER, 18f) // 폰트 크기 증가 (16f -> 18f)
                                 )
-                                val settings = sectionSettings[sectionName] ?: Triple(false, RenderKoreanTextToImage.TextAlign.LEFT, textSize)
+                                val settings = sectionSettings[sectionName] ?: Triple(false, KoreanTextRenderer.TextAlign.LEFT, textSize)
                                 val (isBold, align, _) = settings
                                 
                                 Log.d(TAG, "이미지 생성 시작: 굵기=$isBold, 정렬=$align, 크기=$textSize")
-                                val image = RenderKoreanTextToImage.createTextImage(content, textSize, isBold, align)
+                                val image = KoreanTextRenderer.createTextImage(content, textSize, isBold, align)
                                 Log.d(TAG, "이미지 생성 완료: ${image.width}x${image.height}")
                                 
-                                val bitmap = RenderKoreanTextToImage.convertToBitmap(image)
+                                val bitmap = KoreanTextRenderer.convertToBitmap(image)
                                 Log.d(TAG, "비트맵 변환 완료: ${bitmap.size}바이트")
                                 
                                 outputStream.write(bitmap)
@@ -775,7 +771,7 @@ object LogicReceiptProcessor {
                         line.startsWith("줄바꿈, ") -> {
                             // 줄바꿈 명령 (예: "줄바꿈, 3")
                             val feedLines = line.substringAfter("줄바꿈, ").toIntOrNull() ?: 1
-                            val feedCommand = HardwarePrinterCommands.POS_Set_PrtAndFeedPaper(feedLines)
+                            val feedCommand = PrinterCommands.POS_Set_PrtAndFeedPaper(feedLines)
                             if (feedCommand != null) {
                                 outputStream.write(feedCommand)
                             }
