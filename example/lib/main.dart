@@ -6,6 +6,7 @@ import 'sample_receipts.dart';
 import 'sample_single_order_data.dart';
 import 'sample_total_order_data.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,12 +42,60 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isScanning = false;
   bool _isConnected = false;
   String _connectedDeviceName = '';
+  String _connectionStatus = '연결되지 않음';
+  StreamSubscription? _connectionStatusSubscription;
+
+  static const EventChannel _connectionStatusChannel =
+      EventChannel('blueberry_printer/connection_status');
 
   @override
   void initState() {
     super.initState();
     initPlatformState();
     _requestBluetoothPermissions();
+    _listenToConnectionStatus();
+  }
+
+  @override
+  void dispose() {
+    _connectionStatusSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenToConnectionStatus() {
+    _connectionStatusSubscription = _connectionStatusChannel
+        .receiveBroadcastStream()
+        .listen((event) {
+      if (event is Map) {
+        final status = event['status'] as String?;
+        final message = event['message'] as String?;
+        final reason = event['reason'] as String?;
+
+        setState(() {
+          if (status == 'connected') {
+            _connectionStatus = '연결됨';
+            if (!_isConnected) {
+              _isConnected = true;
+            }
+          } else if (status == 'disconnected') {
+            // 이유가 있으면 표시, 없으면 기본 메시지
+            _connectionStatus = reason ?? '연결 끊김';
+            _isConnected = false;
+            _connectedDeviceName = '';
+          }
+        });
+
+        if (message != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: status == 'connected' ? Colors.green : Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    });
   }
 
   Future<void> initPlatformState() async {
@@ -444,6 +493,29 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: const Text('블루베리 프린터'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Row(
+                children: [
+                  Icon(
+                    _isConnected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                    color: _isConnected ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _connectionStatus,
+                    style: TextStyle(
+                      color: _isConnected ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),

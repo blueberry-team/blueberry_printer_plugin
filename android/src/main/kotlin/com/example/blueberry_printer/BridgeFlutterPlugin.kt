@@ -10,22 +10,46 @@ import java.io.OutputStream
 import android.util.Log
 import com.example.blueberry_printer.data.DataSampleReceipts
 import com.example.blueberry_printer.logic.LogicReceiptProcessor
+import com.example.blueberry_printer.hardware.RealtimeConnectionChecker
+import io.flutter.plugin.common.EventChannel
+import android.os.Handler
+import android.os.Looper
 
 /** BridgeFlutterPlugin */
-class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
+class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
-  
+  private lateinit var eventChannel : EventChannel
+  private var eventSink: EventChannel.EventSink? = null
+
   // 현재 연결된 블루투스 소켓과 출력 스트림
   private var currentSocket: BluetoothSocket? = null
   private var outputStream: OutputStream? = null
 
+  // 연결 상태 모니터링
+  private var connectionChecker: RealtimeConnectionChecker? = null
+
+  // UI 스레드 핸들러
+  private val mainHandler = Handler(Looper.getMainLooper())
+
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "blueberry_printer")
     channel.setMethodCallHandler(this)
+
+    // EventChannel 설정 (연결 상태 스트림)
+    eventChannel = EventChannel(flutterPluginBinding.binaryMessenger, "blueberry_printer/connection_status")
+    eventChannel.setStreamHandler(this)
+  }
+
+  override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+    eventSink = events
+  }
+
+  override fun onCancel(arguments: Any?) {
+    eventSink = null
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
@@ -86,11 +110,14 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
           val socket = device.createRfcommSocketToServiceRecord(uuid)
           bluetoothAdapter.cancelDiscovery()
           socket.connect()
-          
+
           // 연결 성공 시 소켓과 출력 스트림 저장
           currentSocket = socket
           outputStream = socket.outputStream
-          
+
+          // 연결 상태 모니터링 시작
+          startConnectionMonitoring(socket)
+
           result.success(true)
         } catch (e: Exception) {
           result.error("CONNECT_FAIL", "연결 실패: ${e.message}", null)
@@ -218,6 +245,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
       }
       "disconnect" -> {
         try {
+          stopConnectionMonitoring()
           currentSocket?.close()
           currentSocket = null
           outputStream = null
@@ -234,7 +262,10 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
+    eventChannel.setStreamHandler(null)
+
     // 플러그인 해제 시 연결 정리
+    stopConnectionMonitoring()
     try {
       currentSocket?.close()
     } catch (e: Exception) {
@@ -242,5 +273,65 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler {
     }
     currentSocket = null
     outputStream = null
+    eventSink = null
+  }
+
+  /**
+   * 연결 상태 모니터링 시작
+   */
+  private fun startConnectionMonitoring(socket: BluetoothSocket) {
+    // 기존 모니터링 중지
+    stopConnectionMonitoring()
+
+    try {
+      connectionChecker = RealtimeConnectionChecker(
+        socket = socket,
+        heartbeatIntervalMs = 5000, // 5초마다 Heartbeat
+        socketTimeoutMs = 3000, // 3초 타임아웃
+        onConnectionLost = { reason ->
+          Log.w("BridgeFlutterPlugin", "프린터 연결이 끊겼습니다: $reason")
+          // UI 스레드에서 Flutter로 연결 끊김 알림
+          mainHandler.post {
+            eventSink?.success(mapOf(
+              "status" to "disconnected",
+              "message" to "프린터 연결이 끊겼습니다: $reason",
+              "reason" to reason
+            ))
+          }
+        },
+        onConnectionRestored = {
+          Log.i("BridgeFlutterPlugin", "프린터 연결이 복구되었습니다")
+          // UI 스레드에서 Flutter로 연결 복구 알림
+          mainHandler.post {
+            eventSink?.success(mapOf(
+              "status" to "connected",
+              "message" to "프린터 연결이 복구되었습니다"
+            ))
+          }
+        }
+      )
+      connectionChecker?.start()
+
+      Log.i("BridgeFlutterPlugin", "연결 상태 모니터링이 시작되었습니다")
+
+      // UI 스레드에서 초기 연결 성공 알림
+      mainHandler.post {
+        eventSink?.success(mapOf(
+          "status" to "connected",
+          "message" to "프린터가 연결되었습니다"
+        ))
+      }
+    } catch (e: Exception) {
+      Log.e("BridgeFlutterPlugin", "연결 모니터링 시작 실패: ${e.message}", e)
+    }
+  }
+
+  /**
+   * 연결 상태 모니터링 중지
+   */
+  private fun stopConnectionMonitoring() {
+    connectionChecker?.stop()
+    connectionChecker = null
+    Log.i("BridgeFlutterPlugin", "연결 상태 모니터링이 중지되었습니다")
   }
 } 

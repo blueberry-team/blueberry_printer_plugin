@@ -1,7 +1,8 @@
 {
-    "cSpell.words": [
-        "ARGB",
-        "blueberry",
-        "Rfcomm"
-    ]
+  "cSpell.words": [
+    "ARGB",
+    "blueberry",
+    "Rfcomm"
+  ],
+  "dart.flutterSdkPath": ".fvm/versions/3.32.8"
 }
