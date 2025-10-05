@@ -5,6 +5,9 @@ import 'package:blueberry_printer/blueberry_printer.dart';
 import 'package:blueberry_printer/models/connection_status.dart';
 import 'package:blueberry_printer/models/disconnect_reason.dart';
 import 'dummy_direct_print_data.dart';
+import 'sample_data_korean.dart';
+import 'sample_data_japanese.dart';
+import 'sample_data_usd.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 
@@ -630,6 +633,120 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// 한국 영수증 출력 (KRW - 정수)
+  Future<void> _printKoreanReceipt() async {
+    try {
+      print('🔍 [DEBUG] 한국 영수증 출력 시작');
+      final koreanOrderData = getSampleKoreanOrder();
+
+      final success = await _blueberryPrinterPlugin.printSingleOrder(
+        koreanOrderData,
+        storeName: '블루베리 카페',
+        storeAddress: '서울특별시 강남구 테헤란로 427',
+        phoneNumber: '02-1234-5678',
+        businessNumber: '123-45-67890',
+        thankYouMessage: '감사합니다!\n다음에 또 방문해 주세요.',
+        language: 'kor',
+        currency: 'KRW',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '한국 영수증 출력 완료' : '한국 영수증 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('한국 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('한국 영수증 출력 실패'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 일본 영수증 출력 (JPY - 정수)
+  Future<void> _printJapaneseReceipt() async {
+    try {
+      print('🔍 [DEBUG] 일본 영수증 출력 시작');
+      final japaneseOrderData = getSampleJapaneseOrder();
+
+      final success = await _blueberryPrinterPlugin.printSingleOrder(
+        japaneseOrderData,
+        storeName: 'ブルーベリーカフェ',
+        storeAddress: '東京都渋谷区恵比寿1-2-3',
+        phoneNumber: '03-1234-5678',
+        businessNumber: '123-45-67890',
+        thankYouMessage: 'ありがとうございます！\nまたお越しください。',
+        language: 'jpn',
+        currency: 'JPY',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '일본 영수증 출력 완료' : '일본 영수증 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('일본 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('일본 영수증 출력 실패'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 미국 영수증 출력 (USD - 소수점 2자리)
+  Future<void> _printUSDReceipt() async {
+    try {
+      print('🔍 [DEBUG] 미국 영수증 출력 시작');
+      final usdOrderData = getSampleUSDOrder();
+
+      final success = await _blueberryPrinterPlugin.printSingleOrder(
+        usdOrderData,
+        storeName: 'Blueberry Cafe',
+        storeAddress: '123 Main St, New York, NY 10001',
+        phoneNumber: '+1-212-555-1234',
+        businessNumber: '12-3456789',
+        thankYouMessage: 'Thank you!\nPlease visit us again.',
+        language: 'eng',
+        currency: 'USD',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '미국 영수증 출력 완료' : '미국 영수증 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('미국 영수증 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('미국 영수증 출력 실패'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -690,155 +807,217 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-        child: Column(
-          children: [
-            // 플랫폼 버전 표시
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.info),
-                title: const Text('플랫폼 버전'),
-                subtitle: Text(_platformVersion),
-              ),
-            ),
-
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-
-            // 기기 검색 및 연결 버튼
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _showDeviceSearchDialog,
-                    icon: const Icon(Icons.bluetooth_searching),
-                    label: const Text('프린터 연결'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                    ),
-                  ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+          child: Column(
+            children: [
+              // 플랫폼 버전 표시
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('플랫폼 버전'),
+                  subtitle: Text(_platformVersion),
                 ),
-                if (_isConnected) ...[
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _disconnect,
-                    icon: const Icon(Icons.bluetooth_disabled),
-                    label: const Text('연결 해제'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.all(16),
+              ),
+
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+
+              // 기기 검색 및 연결 버튼
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _showDeviceSearchDialog,
+                      icon: const Icon(Icons.bluetooth_searching),
+                      label: const Text('프린터 연결'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                      ),
                     ),
                   ),
+                  if (_isConnected) ...[
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: _disconnect,
+                      icon: const Icon(Icons.bluetooth_disabled),
+                      label: const Text('연결 해제'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+
+              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+
+              // 영수증 출력 버튼들 (하나의 카드로 통합)
+              if (_isConnected) ...[
+                Card(
+                  color: Colors.teal.withAlpha(50),
+                  child: Padding(
+                    padding:
+                        EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
+                    child: Column(
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.receipt_long, color: Colors.teal),
+                            SizedBox(width: 8),
+                            Text(
+                              '영수증 출력',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.teal,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.02),
+
+                        // 텍스트 출력
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printTextSample,
+                            icon: const Icon(Icons.text_fields),
+                            label: const Text('텍스트 출력'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 단일 주문
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printOrderReceipt,
+                            icon: const Icon(Icons.receipt),
+                            label: const Text('단일 주문'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 전체 주문
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printCumulativeOrderReceipt,
+                            icon: const Icon(Icons.library_books),
+                            label: const Text('전체 주문 (누적)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepOrange,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // Direct 단일 주문
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printDirectSingleOrder,
+                            icon: const Icon(Icons.bolt),
+                            label: const Text('단일 주문 (Direct)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // Direct 전체 주문
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printDirectTotalOrder,
+                            icon: const Icon(Icons.flash_on),
+                            label: const Text('전체 주문 (Direct)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.cyan,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                        const Divider(),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        const Text(
+                          '다국어 샘플',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 한국 영수증
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printKoreanReceipt,
+                            icon: const Icon(Icons.language),
+                            label: const Text('한국 영수증 (KRW)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 일본 영수증
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printJapaneseReceipt,
+                            icon: const Icon(Icons.language),
+                            label: const Text('일본 영수증 (JPY)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 미국 영수증
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printUSDReceipt,
+                            icon: const Icon(Icons.language),
+                            label: const Text('미국 영수증 (USD)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-            ),
-
-            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-
-            // 영수증 출력 버튼들
-            if (_isConnected) ...[
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              Card(
-                color: Colors.blue.withAlpha(50),
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-                  child: Column(
-                    children: [
-                      const Text(
-                        '기본 출력',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.02),
-                      ElevatedButton.icon(
-                        onPressed: _printTextSample,
-                        icon: const Icon(Icons.text_fields),
-                        label: const Text('텍스트 출력'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // 새로운 직접 출력 방식 테스트 버튼들
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-              Card(
-                color: Colors.teal.withAlpha(50),
-                child: Padding(
-                  padding:
-                      EdgeInsets.all(MediaQuery.of(context).size.width * 0.04),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.new_releases, color: Colors.teal),
-                          SizedBox(width: 8),
-                          Text(
-                            '직접 출력 방식 (New)',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.teal,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '텍스트 파싱 없이 직접 출력하는 새로운 방식',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.02),
-                      Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _printDirectSingleOrder,
-                              icon: const Icon(Icons.bolt),
-                              label: const Text('단일 주문 (Direct)'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.015),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _printDirectTotalOrder,
-                              icon: const Icon(Icons.flash_on),
-                              label: const Text('전체 주문 (Direct)'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.cyan,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

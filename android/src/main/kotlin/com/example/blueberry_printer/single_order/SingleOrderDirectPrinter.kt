@@ -55,13 +55,13 @@ object SingleOrderDirectPrinter {
                 ?: localizer.getText("no_table_info")
 
             // 총 금액 계산
-            var calculatedTotalPrice = 0
+            var calculatedTotalPrice = 0.0
             val orderVersions = orderData["orderVersion"] as? List<Map<String, Any>> ?: emptyList()
 
             for (version in orderVersions) {
                 val orderItems = version["orderItems"] as? List<Map<String, Any>> ?: emptyList()
                 for (item in orderItems) {
-                    val itemPrice = item["price"] as? Int ?: 0
+                    val itemPrice = (item["price"] as? Number)?.toDouble() ?: 0.0
                     val itemQuantity = item["quantity"] as? Int ?: 0
                     calculatedTotalPrice += (itemPrice * itemQuantity)
 
@@ -70,7 +70,7 @@ object SingleOrderDirectPrinter {
                     for (option in options) {
                         val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                         for (selectedItem in selectedItems) {
-                            val optionPrice = selectedItem["itemPrice"] as? Int ?: 0
+                            val optionPrice = (selectedItem["itemPrice"] as? Number)?.toDouble() ?: 0.0
                             val optionQuantity = selectedItem["quantity"] as? Int ?: 0
                             calculatedTotalPrice += (optionPrice * optionQuantity)
                         }
@@ -257,11 +257,11 @@ ${localizer.getText("table")}: $tableName
             for (item in orderItems) {
                 val menuName = item["menuName"] as? String ?: "상품명 없음"
                 val quantity = item["quantity"] as? Int ?: 0
-                val basePrice = item["price"] as? Int ?: 0
+                val basePrice = (item["price"] as? Number)?.toDouble() ?: 0.0
 
                 // 메뉴 기본 가격만 표시 (옵션 가격 제외)
                 val menuTotalPrice = basePrice * quantity
-                sb.append("$menuName x$quantity = ${formatPrice(menuTotalPrice)}$currencySymbol\n")
+                sb.append("$menuName x$quantity = ${formatPrice(menuTotalPrice, currency)}$currencySymbol\n")
 
                 // 옵션 상세 표시 (가격 포함)
                 val options = item["options"] as? List<Map<String, Any>> ?: emptyList()
@@ -269,7 +269,7 @@ ${localizer.getText("table")}: $tableName
                     val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                     for (selectedItem in selectedItems) {
                         val itemName = selectedItem["itemName"] as? String ?: "옵션명 없음"
-                        val itemPrice = selectedItem["itemPrice"] as? Int ?: 0
+                        val itemPrice = (selectedItem["itemPrice"] as? Number)?.toDouble() ?: 0.0
                         val itemQuantity = selectedItem["quantity"] as? Int ?: 0
 
                         // 옵션 총 가격 계산
@@ -277,9 +277,9 @@ ${localizer.getText("table")}: $tableName
 
                         // 옵션 이름과 가격 표시
                         if (itemQuantity > 1) {
-                            sb.append("  - $itemName x$itemQuantity = ${formatPrice(optionTotalPrice)}$currencySymbol\n")
+                            sb.append("  - $itemName x$itemQuantity = ${formatPrice(optionTotalPrice, currency)}$currencySymbol\n")
                         } else {
-                            sb.append("  - $itemName = ${formatPrice(optionTotalPrice)}$currencySymbol\n")
+                            sb.append("  - $itemName = ${formatPrice(optionTotalPrice, currency)}$currencySymbol\n")
                         }
                     }
                 }
@@ -302,12 +302,12 @@ ${localizer.getText("table")}: $tableName
      */
     private fun printTotal(
         outputStream: OutputStream,
-        totalPrice: Int,
+        totalPrice: Double,
         currency: String,
         localizer: Localizer
     ) {
         val currencySymbol = getCurrencySymbol(currency)
-        val totalText = "${localizer.getText("total")}: ${formatPrice(totalPrice)}$currencySymbol"
+        val totalText = "${localizer.getText("total")}: ${formatPrice(totalPrice, currency)}$currencySymbol"
 
         val image = KoreanTextRenderer.createTextImage(
             totalText,
@@ -361,10 +361,15 @@ ${localizer.getText("table")}: $tableName
     }
 
     /**
-     * 가격 포맷팅 (천단위 콤마)
+     * 가격 포맷팅 (천단위 콤마, 통화별 소수점 처리)
+     * USD, EUR: 소수점 2자리
+     * KRW, JPY: 정수
      */
-    private fun formatPrice(price: Int): String {
-        return String.format("%,d", price)
+    private fun formatPrice(price: Double, currency: String): String {
+        return when (currency) {
+            "USD", "EUR" -> String.format("%,.2f", price) // 소수점 2자리
+            else -> String.format("%,.0f", price) // KRW, JPY는 정수
+        }
     }
 
     /**

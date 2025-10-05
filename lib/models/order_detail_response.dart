@@ -23,7 +23,7 @@ class OrderDetailResponse {
   final String tableName;
 
   /// 총 가격
-  final int totalPrice;
+  final double totalPrice;
 
   /// 주문 버전들 (영수증)
   final List<OrderVersionResponse> orderVersion;
@@ -35,7 +35,7 @@ class OrderDetailResponse {
       orderNumber: json['orderNumber'] as String,
       tableNumber: json['tableNumber'] as int,
       tableName: json['tableName'] as String,
-      totalPrice: json['totalPrice'] as int,
+      totalPrice: (json['totalPrice'] as num).toDouble(),
       orderVersion: (json['orderVersion'] as List<dynamic>)
           .map((e) => OrderVersionResponse.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -166,7 +166,7 @@ class OrderDetailItemResponse {
   final int quantity;
 
   /// 가격
-  final int price;
+  final double price;
 
   /// 옵션들
   final List<MenuOptionResponse> options;
@@ -177,7 +177,7 @@ class OrderDetailItemResponse {
       menuId: json['menuId'] as String,
       menuName: json['menuName'] as String,
       quantity: json['quantity'] as int,
-      price: json['price'] as int,
+      price: (json['price'] as num).toDouble(),
       options: (json['options'] as List<dynamic>)
           .map((e) => MenuOptionResponse.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -278,7 +278,7 @@ class SelectedOptionItemResponse {
   final String itemName;
 
   /// 아이템 가격
-  final int itemPrice;
+  final double itemPrice;
 
   /// 수량
   final int quantity;
@@ -288,7 +288,7 @@ class SelectedOptionItemResponse {
     return SelectedOptionItemResponse(
       menuOptionItemId: json['menuOptionItemId'] as String,
       itemName: json['itemName'] as String,
-      itemPrice: json['itemPrice'] as int,
+      itemPrice: (json['itemPrice'] as num).toDouble(),
       quantity: json['quantity'] as int,
     );
   }
