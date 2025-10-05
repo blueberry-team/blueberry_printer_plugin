@@ -42,8 +42,18 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
   }
 
   @override
-  Future<bool> printSampleReceipt() async {
-    final bool result = await methodChannel.invokeMethod('printSampleReceipt');
+  Future<bool> printText(
+    String text, {
+    double fontSize = 20.0,
+    bool isBold = false,
+    String align = 'LEFT',
+  }) async {
+    final bool result = await methodChannel.invokeMethod('printText', {
+      'text': text,
+      'fontSize': fontSize,
+      'isBold': isBold,
+      'align': align,
+    });
     return result;
   }
 

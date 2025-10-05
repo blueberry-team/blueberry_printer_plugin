@@ -8,8 +8,7 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.bluetooth.BluetoothSocket
 import java.io.OutputStream
 import android.util.Log
-import com.example.blueberry_printer.sample_receipt.SampleReceipts
-import com.example.blueberry_printer.common.ReceiptProcessor
+import com.example.blueberry_printer.sample_receipt.SimpleTextPrinter
 import com.example.blueberry_printer.printer_connection.RealtimeConnectionChecker
 import com.example.blueberry_printer.single_order.SingleOrderDirectPrinter
 import com.example.blueberry_printer.multiple_order.MultipleOrderDirectPrinter
@@ -140,28 +139,45 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         
         try {
           Log.d("BridgeFlutterPlugin", "커스텀 영수증 출력 시작: $receiptText")
-          ReceiptProcessor.parseAndPrint(stream, receiptText)
+          SimpleTextPrinter.print(stream, receiptText)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "커스텀 영수증 출력 실패", e)
           result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
-      "printSampleReceipt" -> {
+      "printText" -> {
+        val text = call.argument<String>("text")
+        val fontSize = call.argument<Double>("fontSize")?.toFloat() ?: 20f
+        val isBold = call.argument<Boolean>("isBold") ?: false
+        val alignString = call.argument<String>("align") ?: "LEFT"
+
+        if (text == null) {
+          result.error("NO_TEXT", "출력할 텍스트가 필요합니다", null)
+          return
+        }
+
         val stream = outputStream
         if (stream == null) {
           result.error("NOT_CONNECTED", "프린터가 연결되지 않았습니다", null)
           return
         }
-        
+
         try {
-          Log.d("BridgeFlutterPlugin", "샘플 영수증 출력 시작")
-          // 샘플 영수증도 동일한 방식으로 처리
-          ReceiptProcessor.parseAndPrint(stream, SampleReceipts.sampleReceiptData)
+          Log.d("BridgeFlutterPlugin", "텍스트 출력 시작: $text")
+
+          // 정렬 방식 변환
+          val align = when (alignString.uppercase()) {
+            "CENTER" -> com.example.blueberry_printer.common.KoreanTextRenderer.TextAlign.CENTER
+            "RIGHT" -> com.example.blueberry_printer.common.KoreanTextRenderer.TextAlign.RIGHT
+            else -> com.example.blueberry_printer.common.KoreanTextRenderer.TextAlign.LEFT
+          }
+
+          SimpleTextPrinter.print(stream, text, fontSize, isBold, align)
           result.success(true)
         } catch (e: Exception) {
-          Log.e("BridgeFlutterPlugin", "샘플 영수증 출력 실패", e)
-          result.error("PRINT_FAIL", "샘플 영수증 출력 실패: ${e.message}", e.stackTrace.toString())
+          Log.e("BridgeFlutterPlugin", "텍스트 출력 실패", e)
+          result.error("PRINT_FAIL", "텍스트 출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
       "printSingleOrder" -> {

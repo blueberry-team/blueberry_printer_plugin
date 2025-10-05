@@ -41,8 +41,13 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
     throw UnimplementedError('printReceipt() has not been implemented.');
   }
 
-  Future<bool> printSampleReceipt() {
-    throw UnimplementedError('printSampleReceipt() has not been implemented.');
+  Future<bool> printText(
+    String text, {
+    double fontSize = 20.0,
+    bool isBold = false,
+    String align = 'LEFT',
+  }) {
+    throw UnimplementedError('printText() has not been implemented.');
   }
 
   Future<bool> disconnect() {

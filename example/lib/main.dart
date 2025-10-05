@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:blueberry_printer/blueberry_printer.dart';
-import 'sample_receipts.dart';
-import 'sample_single_order_data.dart';
-import 'sample_total_order_data.dart';
 import 'dummy_direct_print_data.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
@@ -375,22 +372,41 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _printSampleReceipt() async {
-    print("🔍 [DEBUG] Flutter: 샘플 영수증 출력 시도");
+  Future<void> _printTextSample() async {
+    print("🔍 [DEBUG] Flutter: 텍스트 출력 시도");
     try {
-      final success = await _blueberryPrinterPlugin.printSampleReceipt();
+      // 샘플 텍스트
+      const sampleText = """블루베리 프린터
+
+간단한 텍스트 출력 테스트입니다.
+
+아메리카노     3,000원
+카페라떼       4,000원
+케이크         5,000원
+
+합계: 12,000원
+
+감사합니다!""";
+
+      final success = await _blueberryPrinterPlugin.printText(
+        sampleText,
+        fontSize: 20.0,
+        isBold: false,
+        align: 'CENTER',
+      );
+
       print("🔍 [DEBUG] Flutter: 출력 결과 - $success");
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('샘플 영수증이 출력되었습니다')),
+            const SnackBar(content: Text('텍스트가 출력되었습니다')),
           );
         }
       }
     } catch (e) {
       print("🔍 [DEBUG] Flutter: 출력 실패 - $e");
       print("🔍 [DEBUG] Flutter: 오류 타입 - ${e.runtimeType}");
-      
+
       String errorMessage = '출력 실패';
       if (e.toString().contains('NOT_CONNECTED')) {
         errorMessage = '프린터가 연결되지 않았습니다. 먼저 프린터에 연결해주세요.';
@@ -399,7 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
       } else if (e.toString().contains('WRITE_FAILED')) {
         errorMessage = '데이터 전송에 실패했습니다. 프린터 상태를 확인해주세요.';
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -412,36 +428,13 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _printCustomReceipt() async {
-    try {
-      final success = await _blueberryPrinterPlugin.printReceipt(SampleReceipts.customReceipt);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? '커스텀 영수증 출력이 완료되었습니다' : '커스텀 영수증 출력에 실패했습니다'),
-            backgroundColor: success ? Colors.green : Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print('커스텀 영수증 출력 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('커스텀 영수증 출력 실패'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   /// 구조화된 주문 영수증 출력
   Future<void> _printOrderReceipt() async {
     print('🔍 [DEBUG] 구조화된 주문 영수증 출력 시작');
     try {
       // 샘플 단일 주문 데이터 가져오기
-      final sampleOrderData = getSampleSingleOrderData();
+      final sampleOrderData = DummyDirectPrintData.getSingleOrderData();
 
       print(' [DEBUG] 네이티브 함수 호출 전: printSingleOrder');
       print(' [DEBUG] 전달할 데이터: ${sampleOrderData.toJson()}');
@@ -484,7 +477,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print('🔍 [DEBUG] 누적 주문 영수증 출력 시작');
       
       // 샘플 전체 주문 데이터 가져오기
-      final cumulativeOrderData = getSampleTotalOrderData();
+      final cumulativeOrderData = DummyDirectPrintData.getTotalOrderData();
       
       print('🔍 [DEBUG] 누적 주문 데이터 생성 완료 - 메뉴 수: ${cumulativeOrderData.orderMenus.length}');
       
@@ -741,39 +734,21 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Column(
                     children: [
                       const Text(
-                        '영수증 출력',
+                        '기본 출력',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       SizedBox(height: MediaQuery.of(context).size.height * 0.02),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _printSampleReceipt,
-                              icon: const Icon(Icons.receipt),
-                              label: const Text('샘플 영수증'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: MediaQuery.of(context).size.width * 0.02),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _printCustomReceipt,
-                              icon: const Icon(Icons.print),
-                              label: const Text('커스텀 영수증'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
+                      ElevatedButton.icon(
+                        onPressed: _printTextSample,
+                        icon: const Icon(Icons.text_fields),
+                        label: const Text('텍스트 출력'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ],
                   ),

@@ -26,8 +26,23 @@ class BlueberryPrinter {
     return BlueberryPrinterPlatform.instance.printReceipt(receiptText);
   }
 
-  Future<bool> printSampleReceipt() {
-    return BlueberryPrinterPlatform.instance.printSampleReceipt();
+  /// 간단한 텍스트 출력
+  /// [text] 출력할 텍스트
+  /// [fontSize] 폰트 크기 (기본값: 20.0)
+  /// [isBold] 굵게 표시 여부 (기본값: false)
+  /// [align] 텍스트 정렬 (LEFT, CENTER, RIGHT) (기본값: LEFT)
+  Future<bool> printText(
+    String text, {
+    double fontSize = 20.0,
+    bool isBold = false,
+    String align = 'LEFT',
+  }) {
+    return BlueberryPrinterPlatform.instance.printText(
+      text,
+      fontSize: fontSize,
+      isBold: isBold,
+      align: align,
+    );
   }
 
   Future<bool> disconnect() {
