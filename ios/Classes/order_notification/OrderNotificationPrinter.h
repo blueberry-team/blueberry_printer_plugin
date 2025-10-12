@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PrinterSDK.h"
+#import <blueberry_printer/PrinterSDK.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

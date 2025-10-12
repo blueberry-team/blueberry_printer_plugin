@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PrinterSDK.h"
+#import <blueberry_printer/PrinterSDK.h>
 
 /**
  * 검색 완료 콜백

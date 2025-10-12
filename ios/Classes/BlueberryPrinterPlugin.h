@@ -6,7 +6,6 @@
 //
 
 #import <Flutter/Flutter.h>
-#import "PrinterSDK.h"
 
 @interface BlueberryPrinterPlugin : NSObject <FlutterPlugin>
 

@@ -6,8 +6,8 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "PrinterSDK.h"
-#import "DisconnectReason.h"
+#import <blueberry_printer/PrinterSDK.h>
+#import <blueberry_printer/DisconnectReason.h>
 
 /**
  * 연결 끊김 콜백

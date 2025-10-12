@@ -14,6 +14,7 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
+  s.public_header_files = 'Classes/BlueberryPrinterPlugin.h'
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'
 
