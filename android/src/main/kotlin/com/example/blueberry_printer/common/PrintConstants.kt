@@ -43,7 +43,7 @@ object PrintConstants {
     }
 
     // 구분선
-    const val SEPARATOR_LINE = "================================"
+    const val SEPARATOR_LINE = "--------------------------------"
 
     // 기본 UUID (블루투스 프린터)
     const val DEFAULT_PRINTER_UUID = "00001101-0000-1000-8000-00805F9B34FB"

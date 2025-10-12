@@ -134,4 +134,19 @@ class BlueberryPrinter {
   Stream<ConnectionStatus> get connectionStatusStream {
     return BlueberryPrinterPlatform.instance.connectionStatusStream;
   }
+
+  /// 소켓에서 받은 주문 알림 데이터로 영수증 출력
+  /// [orderData] 주문 알림 데이터 (Map 형식)
+  ///
+  /// 사용 예시:
+  /// ```dart
+  /// final printer = BlueberryPrinter();
+  /// final orderData = OrderNotificationResponse.fromJson(socketData);
+  /// await printer.printOrderFromSocket(orderData.toJson());
+  /// ```
+  Future<bool> printOrderFromSocket(
+    Map<String, dynamic> orderData,
+  ) {
+    return BlueberryPrinterPlatform.instance.printOrderFromSocket(orderData);
+  }
 }

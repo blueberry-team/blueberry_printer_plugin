@@ -170,4 +170,23 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
       return ConnectionStatus.fromMap(event as Map<dynamic, dynamic>);
     });
   }
+
+  @override
+  Future<bool> printOrderFromSocket(
+    Map<String, dynamic> orderData,
+  ) async {
+    print(' [DEBUG] MethodChannel: printOrderFromSocket 호출 시작');
+    print(' [DEBUG] MethodChannel: 전달할 데이터: $orderData');
+
+    try {
+      final bool result = await methodChannel.invokeMethod('printOrderFromSocket', {
+        'orderData': orderData,
+      });
+      print(' [DEBUG] MethodChannel: 성공 결과: $result');
+      return result;
+    } catch (e) {
+      print(' [DEBUG] MethodChannel: 오류 발생: $e');
+      rethrow;
+    }
+  }
 }

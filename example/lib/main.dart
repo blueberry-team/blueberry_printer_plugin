@@ -8,6 +8,7 @@ import 'dummy_direct_print_data.dart';
 import 'sample_data_korean.dart';
 import 'sample_data_japanese.dart';
 import 'sample_data_usd.dart';
+import 'sample_socket_notification.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/services.dart';
 
@@ -656,6 +657,93 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// 주문 알림 출력 (소켓 시뮬레이션)
+  Future<void> _printSocketNotification() async {
+    try {
+      print('🔍 [DEBUG] 주문 알림 출력 시작');
+      final notificationData = getSampleSocketNotification();
+
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '주문 알림 출력 완료' : '주문 알림 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('주문 알림 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('주문 알림 출력 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 변경 알림 출력
+  Future<void> _printUpdateNotification() async {
+    try {
+      final notificationData = getSampleUpdateNotification();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '주문 변경 알림 출력 완료' : '주문 변경 알림 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('주문 변경 알림 출력 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 취소 알림 출력
+  Future<void> _printCancelNotification() async {
+    try {
+      final notificationData = getSampleCancelNotification();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '주문 취소 알림 출력 완료' : '주문 취소 알림 출력 실패'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('주문 취소 알림 출력 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -886,6 +974,64 @@ class _MyHomePageState extends State<MyHomePage> {
                             label: const Text('미국 영수증 (USD)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                        const Divider(),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        const Text(
+                          '주문 알림 (소켓)',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 추가 알림
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printSocketNotification,
+                            icon: const Icon(Icons.notifications_active),
+                            label: const Text('주문 추가 알림'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 변경 알림
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printUpdateNotification,
+                            icon: const Icon(Icons.update),
+                            label: const Text('주문 변경 알림'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 취소 알림
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printCancelNotification,
+                            icon: const Icon(Icons.cancel),
+                            label: const Text('주문 취소 알림'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[700],
                               foregroundColor: Colors.white,
                             ),
                           ),

@@ -12,6 +12,7 @@ import com.example.blueberry_printer.sample_receipt.SimpleTextPrinter
 import com.example.blueberry_printer.printer_connection.RealtimeConnectionChecker
 import com.example.blueberry_printer.single_order.SingleOrderDirectPrinter
 import com.example.blueberry_printer.multiple_order.MultipleOrderDirectPrinter
+import com.example.blueberry_printer.order_notification.OrderNotificationPrinter
 import com.example.blueberry_printer.bluetooth_search.BluetoothDeviceSearcher
 import com.example.blueberry_printer.common.DisconnectReason
 import io.flutter.plugin.common.EventChannel
@@ -241,6 +242,31 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "전체 주문 영수증 출력 실패", e)
+          result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
+        }
+      }
+      "printOrderFromSocket" -> {
+        val orderData = call.argument<Map<String, Any>>("orderData")
+
+        if (orderData == null) {
+          result.error("NO_DATA", "주문 알림 데이터가 필요합니다", null)
+          return
+        }
+
+        Log.d("BridgeFlutterPlugin", "전달받은 주문 알림 데이터: $orderData")
+
+        val stream = outputStream
+        if (stream == null) {
+          result.error("NOT_CONNECTED", "프린터가 연결되지 않았습니다", null)
+          return
+        }
+
+        try {
+          Log.d("BridgeFlutterPlugin", "주문 알림 영수증 출력 시작")
+          OrderNotificationPrinter.print(stream, orderData)
+          result.success(true)
+        } catch (e: Exception) {
+          Log.e("BridgeFlutterPlugin", "주문 알림 영수증 출력 실패", e)
           result.error("PRINT_FAIL", "출력 실패: ${e.message}", e.stackTrace.toString())
         }
       }
