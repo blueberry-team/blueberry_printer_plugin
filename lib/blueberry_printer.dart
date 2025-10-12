@@ -137,16 +137,28 @@ class BlueberryPrinter {
 
   /// 소켓에서 받은 주문 알림 데이터로 영수증 출력
   /// [orderData] 주문 알림 데이터 (Map 형식)
+  /// [language] 언어 설정 (kor, eng, jpn)
+  /// [currency] 화폐 단위 (KRW, USD, JPY, etc.)
   ///
   /// 사용 예시:
   /// ```dart
   /// final printer = BlueberryPrinter();
   /// final orderData = OrderNotificationResponse.fromJson(socketData);
-  /// await printer.printOrderFromSocket(orderData.toJson());
+  /// await printer.printOrderFromSocket(
+  ///   orderData.toJson(),
+  ///   language: 'kor',
+  ///   currency: 'KRW',
+  /// );
   /// ```
   Future<bool> printOrderFromSocket(
-    Map<String, dynamic> orderData,
-  ) {
-    return BlueberryPrinterPlatform.instance.printOrderFromSocket(orderData);
+    Map<String, dynamic> orderData, {
+    String language = 'kor',
+    String currency = 'KRW',
+  }) {
+    return BlueberryPrinterPlatform.instance.printOrderFromSocket(
+      orderData,
+      language: language,
+      currency: currency,
+    );
   }
 }

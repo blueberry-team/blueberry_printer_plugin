@@ -78,7 +78,7 @@ object MultipleOrderDirectPrinter {
 
             // 테이블 번호 출력 (박스로 강조) - 파라미터로 받은 값 사용
             if (tableNumber != null) {
-                printTableNumber(outputStream, tableNumber)
+                printTableNumber(outputStream, tableNumber, localizer)
             }
 
             // 타이틀 출력 (매장명)
@@ -153,9 +153,9 @@ object MultipleOrderDirectPrinter {
     }
 
     /**
-     * 테이블 번호 출력 (박스로 강조)
+     * 테이블 번호 출력 (박스로 강조, 다국어)
      */
-    private fun printTableNumber(outputStream: OutputStream, tableNumber: String) {
+    private fun printTableNumber(outputStream: OutputStream, tableNumber: String, localizer: Localizer) {
         // 박스 윗부분
         val boxTop = "┌──────────────┐"
         val boxTopImage = KoreanTextRenderer.createTextImage(
@@ -167,8 +167,8 @@ object MultipleOrderDirectPrinter {
         outputStream.write(KoreanTextRenderer.convertToBitmap(boxTopImage))
         outputStream.flush()
 
-        // 테이블 번호 (박스 중간)
-        val tableText = "│  테이블 $tableNumber  │"
+        // 테이블 번호 (박스 중간) - 다국어 지원
+        val tableText = "│  ${localizer.getText("table")} $tableNumber  │"
         val tableImage = KoreanTextRenderer.createTextImage(
             tableText,
             42f, // 소켓 메뉴 크기와 동일

@@ -109,8 +109,10 @@ abstract class BlueberryPrinterPlatform extends PlatformInterface {
   /// 소켓에서 받은 주문 알림 데이터로 영수증 출력
   /// [orderData] 주문 알림 데이터 (Map 형식)
   Future<bool> printOrderFromSocket(
-    Map<String, dynamic> orderData,
-  ) {
+    Map<String, dynamic> orderData, {
+    String language = 'kor',
+    String currency = 'KRW',
+  }) {
     throw UnimplementedError('printOrderFromSocket() has not been implemented.');
   }
 }

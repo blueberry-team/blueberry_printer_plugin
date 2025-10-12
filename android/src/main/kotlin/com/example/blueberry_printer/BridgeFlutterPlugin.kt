@@ -247,6 +247,8 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
       }
       "printOrderFromSocket" -> {
         val orderData = call.argument<Map<String, Any>>("orderData")
+        val language = call.argument<String>("language") ?: "kor"
+        val currency = call.argument<String>("currency") ?: "KRW"
 
         if (orderData == null) {
           result.error("NO_DATA", "주문 알림 데이터가 필요합니다", null)
@@ -254,6 +256,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         }
 
         Log.d("BridgeFlutterPlugin", "전달받은 주문 알림 데이터: $orderData")
+        Log.d("BridgeFlutterPlugin", "언어: $language, 화폐: $currency")
 
         val stream = outputStream
         if (stream == null) {
@@ -263,7 +266,7 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
 
         try {
           Log.d("BridgeFlutterPlugin", "주문 알림 영수증 출력 시작")
-          OrderNotificationPrinter.print(stream, orderData)
+          OrderNotificationPrinter.print(stream, orderData, language, currency)
           result.success(true)
         } catch (e: Exception) {
           Log.e("BridgeFlutterPlugin", "주문 알림 영수증 출력 실패", e)

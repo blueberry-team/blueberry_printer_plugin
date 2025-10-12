@@ -37,17 +37,6 @@
         // 다국어 텍스트 가져오기
         LocalizerMultiple* localizer = [[LocalizerMultiple alloc] initWithLanguage:language];
 
-        // 주문 기본 정보 추출
-        NSString* orderNumber = orderData[@"orderNumber"];
-        if (!orderNumber) {
-            orderNumber = [localizer getText:@"no_order_number"];
-        }
-
-        NSString* tableName = orderData[@"tableName"];
-        if (!tableName) {
-            tableName = [localizer getText:@"no_table_info"];
-        }
-
         // API 응답에서 제공하는 총 금액 사용
         NSNumber* totalPriceNum = orderData[@"totalPrice"];
         double grandTotalPrice = [totalPriceNum doubleValue];
@@ -67,6 +56,14 @@
 
         NSLog(@"📦 누적 주문 처리 시작 - 버전 수: %lu", (unsigned long)orderVersions.count);
 
+        // 날짜/시간 출력 (현재 시간)
+        [self printDateTime:printerSDK language:language];
+
+        // 테이블 번호 출력 (박스로 강조) - 파라미터로 받은 값 사용
+        if (tableNumber) {
+            [self printTableNumber:printerSDK tableNumber:tableNumber localizer:localizer];
+        }
+
         // 타이틀 출력 (매장명)
         [self printTitle:printerSDK storeName:storeName];
 
@@ -79,12 +76,6 @@
 
         // 구분선 출력
         [self printSeparator:printerSDK];
-
-        // 주문 정보 출력
-        [self printOrderInfo:printerSDK
-                 orderNumber:orderNumber
-                   tableName:tableName
-                   localizer:localizer];
 
         // 누적 상품 목록 출력
         [self printMergedMenuList:printerSDK
@@ -131,9 +122,77 @@
 
 #pragma mark - Private Methods
 
+/**
+ * 날짜/시간 출력 (현재 시간, 다국어)
+ */
++ (void)printDateTime:(PrinterSDK*)printerSDK language:(NSString*)language {
+    NSDate* currentDate = [NSDate date];
+    NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
+
+    if ([language isEqualToString:@"eng"]) {
+        [dateFormatter setDateFormat:@"MMM d (E) HH:mm"];
+        [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US"]];
+    } else if ([language isEqualToString:@"jpn"]) {
+        [dateFormatter setDateFormat:@"M月d日 (E) HH:mm"];
+        [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"ja_JP"]];
+    } else {
+        // "kor" 기본값
+        [dateFormatter setDateFormat:@"M월 d일 (E) HH:mm"];
+        [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"ko_KR"]];
+    }
+
+    NSString* formattedDate = [dateFormatter stringFromDate:currentDate];
+
+    UIImage* image = [KoreanTextRenderer createTextImage:formattedDate
+                                                textSize:24.0f // 소켓과 동일한 크기
+                                                  isBold:NO
+                                                   align:TextAlignLeft];
+    NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
+    NSString* hexString = [PrinterUtilities dataToHexString:bitmap];
+    [printerSDK sendHex:hexString];
+
+    [self feedPaper:printerSDK lines:2];
+}
+
+/**
+ * 테이블 번호 출력 (박스로 강조, 다국어)
+ */
++ (void)printTableNumber:(PrinterSDK*)printerSDK tableNumber:(NSString*)tableNumber localizer:(LocalizerMultiple*)localizer {
+    // 박스 윗부분
+    NSString* boxTop = @"┌──────────────┐";
+    UIImage* boxTopImage = [KoreanTextRenderer createTextImage:boxTop
+                                                      textSize:32.0f
+                                                        isBold:NO
+                                                         align:TextAlignCenter];
+    NSData* boxTopBitmap = [KoreanTextRenderer convertToBitmap:boxTopImage];
+    [printerSDK sendHex:[PrinterUtilities dataToHexString:boxTopBitmap]];
+    [self feedPaper:printerSDK lines:1];
+
+    // 테이블 번호 (박스 중간) - 다국어 지원
+    NSString* tableText = [NSString stringWithFormat:@"│  %@ %@  │", [localizer getText:@"table"], tableNumber];
+    UIImage* tableImage = [KoreanTextRenderer createTextImage:tableText
+                                                     textSize:42.0f // 소켓 메뉴 크기와 동일
+                                                       isBold:YES
+                                                        align:TextAlignCenter];
+    NSData* tableBitmap = [KoreanTextRenderer convertToBitmap:tableImage];
+    [printerSDK sendHex:[PrinterUtilities dataToHexString:tableBitmap]];
+    [self feedPaper:printerSDK lines:1];
+
+    // 박스 아랫부분
+    NSString* boxBottom = @"└──────────────┘";
+    UIImage* boxBottomImage = [KoreanTextRenderer createTextImage:boxBottom
+                                                         textSize:32.0f
+                                                           isBold:NO
+                                                            align:TextAlignCenter];
+    NSData* boxBottomBitmap = [KoreanTextRenderer convertToBitmap:boxBottomImage];
+    [printerSDK sendHex:[PrinterUtilities dataToHexString:boxBottomBitmap]];
+
+    [self feedPaper:printerSDK lines:2];
+}
+
 + (void)printTitle:(PrinterSDK*)printerSDK storeName:(NSString*)storeName {
     UIImage* image = [KoreanTextRenderer createTextImage:storeName
-                                                textSize:[PrintConstants titleFontSize]
+                                                textSize:42.0f // Android와 동일 (소켓 메뉴 크기)
                                                   isBold:YES
                                                    align:TextAlignCenter];
     NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
@@ -149,33 +208,18 @@
         businessNumber:(NSString*)businessNumber
              localizer:(LocalizerMultiple*)localizer {
 
-    if (!storeAddress && !phoneNumber && !businessNumber) {
-        return;
-    }
-
-    NSMutableString* sb = [NSMutableString string];
-
+    // Android와 동일하게 주소만 출력
     if (storeAddress) {
-        [sb appendFormat:@"%@\n", storeAddress];
-    }
-    if (phoneNumber) {
-        [sb appendFormat:@"%@: %@\n", [localizer getText:@"phone"], phoneNumber];
-    }
-    if (businessNumber) {
-        [sb appendFormat:@"%@: %@\n", [localizer getText:@"business_number"], businessNumber];
-    }
+        UIImage* image = [KoreanTextRenderer createTextImage:storeAddress
+                                                    textSize:28.0f // Android와 동일 (소켓 옵션 크기)
+                                                      isBold:NO
+                                                       align:TextAlignCenter];
+        NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
+        NSString* hexString = [PrinterUtilities dataToHexString:bitmap];
+        [printerSDK sendHex:hexString];
 
-    NSString* trimmedText = [sb stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-
-    UIImage* image = [KoreanTextRenderer createTextImage:trimmedText
-                                                textSize:[PrintConstants storeInfoFontSize]
-                                                  isBold:NO
-                                                   align:TextAlignCenter];
-    NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
-    NSString* hexString = [PrinterUtilities dataToHexString:bitmap];
-    [printerSDK sendHex:hexString];
-
-    [self feedPaper:printerSDK lines:[PrintConstants lineFeedAfterStoreInfo]];
+        [self feedPaper:printerSDK lines:[PrintConstants lineFeedAfterStoreInfo]];
+    }
 }
 
 + (void)printSeparator:(PrinterSDK*)printerSDK {
@@ -299,7 +343,10 @@
         }
     }
 
-    // 합쳐진 상품 출력
+    // 다국어 옵션 prefix 가져오기
+    NSString* optionPrefix = [localizer getText:@"option"];
+
+    // 합쳐진 상품 출력 (Android와 동일하게 메뉴와 옵션을 분리해서 다른 크기로 출력)
     for (NSString* uniqueKey in mergedItems) {
         NSDictionary* itemData = mergedItems[uniqueKey];
         NSString* menuName = itemData[@"menuName"];
@@ -307,14 +354,21 @@
         double totalPrice = [itemData[@"totalPrice"] doubleValue];
         NSArray* options = itemData[@"options"];
 
-        // 메뉴 기본 가격만 표시 (옵션 가격 제외)
-        [sb appendFormat:@"%@ x%ld = %@%@\n",
-         menuName,
-         (long)quantity,
-         [self formatPrice:totalPrice currency:currency],
-         currencySymbol];
+        // 메뉴 라인 출력 (32f)
+        NSString* menuLine = [NSString stringWithFormat:@"%@ x%ld = %@%@",
+                             menuName,
+                             (long)quantity,
+                             [self formatPrice:totalPrice currency:currency],
+                             currencySymbol];
 
-        // 옵션 표시 (가격 포함)
+        UIImage* menuImage = [KoreanTextRenderer createTextImage:menuLine
+                                                        textSize:32.0f // Android와 동일 (메뉴 크기)
+                                                          isBold:NO
+                                                           align:TextAlignLeft];
+        [printerSDK sendHex:[PrinterUtilities dataToHexString:[KoreanTextRenderer convertToBitmap:menuImage]]];
+
+        // 옵션 라인 수집
+        NSMutableString* optionLines = [NSMutableString string];
         for (NSDictionary* option in options) {
             NSArray* selectedItems = option[@"selectedItems"];
             if (!selectedItems) continue;
@@ -325,46 +379,29 @@
                                     ?: selectedItem[@"menuOptionItemDetailName"]
                                     ?: @"옵션명 없음";
 
-                NSNumber* optionPriceNum = selectedItem[@"itemPrice"]
-                                        ?: selectedItem[@"menuOptionItemDetailPrice"];
-                double optionPrice = [optionPriceNum doubleValue];
-
                 NSNumber* optionQuantityNum = selectedItem[@"quantity"]
                                            ?: selectedItem[@"menuOptionItemDetailQuantity"];
                 NSInteger optionQuantity = [optionQuantityNum integerValue];
 
-                NSLog(@"옵션 출력: 메뉴=%@, 옵션=%@, 가격=%.2f, 수량=%ld",
-                      menuName, optionName, optionPrice, (long)optionQuantity);
-
-                // 옵션 총 가격 계산
-                double optionTotalPrice = optionPrice * optionQuantity;
-
-                // 옵션 이름과 가격 표시
+                // 옵션 이름만 표시 (가격 제거, Android와 동일)
                 if (optionQuantity > 1) {
-                    [sb appendFormat:@"  - %@ x%ld = %@%@\n",
-                     optionName,
-                     (long)optionQuantity,
-                     [self formatPrice:optionTotalPrice currency:currency],
-                     currencySymbol];
+                    [optionLines appendFormat:@"  %@ %@ x%ld\n", optionPrefix, optionName, (long)optionQuantity];
                 } else {
-                    [sb appendFormat:@"  - %@ = %@%@\n",
-                     optionName,
-                     [self formatPrice:optionTotalPrice currency:currency],
-                     currencySymbol];
+                    [optionLines appendFormat:@"  %@ %@\n", optionPrefix, optionName];
                 }
             }
         }
+
+        // 옵션 라인 출력 (24f)
+        if (optionLines.length > 0) {
+            NSString* trimmedOptions = [optionLines stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            UIImage* optionImage = [KoreanTextRenderer createTextImage:trimmedOptions
+                                                            textSize:24.0f // Android와 동일 (옵션 크기)
+                                                              isBold:NO
+                                                               align:TextAlignLeft];
+            [printerSDK sendHex:[PrinterUtilities dataToHexString:[KoreanTextRenderer convertToBitmap:optionImage]]];
+        }
     }
-
-    NSString* trimmedText = [sb stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-
-    UIImage* image = [KoreanTextRenderer createTextImage:trimmedText
-                                                textSize:[PrintConstants menuListFontSize]
-                                                  isBold:NO
-                                                   align:TextAlignLeft];
-    NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
-    NSString* hexString = [PrinterUtilities dataToHexString:bitmap];
-    [printerSDK sendHex:hexString];
 }
 
 + (void)printGrandTotal:(PrinterSDK*)printerSDK
@@ -374,12 +411,12 @@
 
     NSString* currencySymbol = [self getCurrencySymbol:currency];
     NSString* totalText = [NSString stringWithFormat:@"%@: %@%@",
-                           [localizer getText:@"total"],
+                           [localizer getText:@"grand_total"],  // Android와 동일하게 "grand_total" 사용
                            [self formatPrice:totalPrice currency:currency],
                            currencySymbol];
 
     UIImage* image = [KoreanTextRenderer createTextImage:totalText
-                                                textSize:[PrintConstants totalFontSize]
+                                                textSize:42.0f // Android와 동일 (소켓 메뉴 크기)
                                                   isBold:YES
                                                    align:TextAlignRight];
     NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
@@ -394,7 +431,7 @@
     NSString* message = thankYouMessage ?: [localizer getText:@"thank_you_default"];
 
     UIImage* image = [KoreanTextRenderer createTextImage:message
-                                                textSize:[PrintConstants thankYouFontSize]
+                                                textSize:28.0f // Android와 동일 (소켓 옵션 크기)
                                                   isBold:NO
                                                    align:TextAlignCenter];
     NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
@@ -486,6 +523,8 @@
         @"order_number": @"Order No",
         @"table": @"Table",
         @"total": @"Total",
+        @"grand_total": @"Grand Total",
+        @"option": @"Option/",
         @"thank_you_default": @"Thank you!\nPlease visit us again.",
         @"phone": @"Phone",
         @"business_number": @"Business No",
@@ -500,6 +539,8 @@
         @"order_number": @"注文番号",
         @"table": @"テーブル",
         @"total": @"合計",
+        @"grand_total": @"総合計",
+        @"option": @"オプション/",
         @"thank_you_default": @"ありがとうございます！\nまたお越しください。",
         @"phone": @"電話",
         @"business_number": @"事業者番号",
@@ -514,6 +555,8 @@
         @"order_number": @"주문번호",
         @"table": @"테이블",
         @"total": @"합계",
+        @"grand_total": @"총 합계",
+        @"option": @"옵션/",
         @"thank_you_default": @"감사합니다!\n다음에 또 방문해 주세요.",
         @"phone": @"전화",
         @"business_number": @"사업자등록번호",

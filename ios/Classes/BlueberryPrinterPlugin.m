@@ -6,13 +6,14 @@
 //
 
 #import "BlueberryPrinterPlugin.h"
-#import "SingleOrderDirectPrinter.h"
-#import "MultipleOrderDirectPrinter.h"
-#import "DisconnectReason.h"
-#import "KoreanTextRenderer.h"
-#import "PrinterCommands.h"
-#import "PrinterUtilities.h"
-#import "EscPosConstants.h"
+#import "single_order/SingleOrderDirectPrinter.h"
+#import "multiple_order/MultipleOrderDirectPrinter.h"
+#import "order_notification/OrderNotificationPrinter.h"
+#import "common/DisconnectReason.h"
+#import "common/KoreanTextRenderer.h"
+#import "common/PrinterCommands.h"
+#import "common/PrinterUtilities.h"
+#import "common/EscPosConstants.h"
 
 @interface BlueberryPrinterPlugin () <FlutterStreamHandler>
 {
@@ -105,6 +106,9 @@
     }
     else if ([@"printTotalOrder" isEqualToString:call.method]) {
         [self printTotalOrder:call.arguments result:result];
+    }
+    else if ([@"printOrderFromSocket" isEqualToString:call.method]) {
+        [self printOrderFromSocket:call.arguments result:result];
     }
     else if ([@"printText" isEqualToString:call.method]) {
         [self printText:call.arguments result:result];
@@ -239,6 +243,33 @@
                                               tableNumber:args[@"tableNumber"]
                                                printerSDK:_printerSDK
                                                     error:&error];
+
+    if (success) {
+        NSLog(@"✅ 출력 완료");
+        result(@YES);
+    } else {
+        NSLog(@"❌ 출력 실패: %@", error.localizedDescription);
+        result([FlutterError errorWithCode:@"PRINT_FAIL" message:error.localizedDescription details:nil]);
+    }
+}
+
+- (void)printOrderFromSocket:(NSDictionary*)args result:(FlutterResult)result {
+    if (!_printerSDK) {
+        result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
+        return;
+    }
+
+    NSLog(@"📄 주문 알림 출력 시작");
+
+    NSString* language = args[@"language"] ?: @"kor";
+    NSString* currency = args[@"currency"] ?: @"KRW";
+
+    NSError* error = nil;
+    BOOL success = [OrderNotificationPrinter printNotification:args[@"orderData"]
+                                                       language:language
+                                                       currency:currency
+                                                     printerSDK:_printerSDK
+                                                          error:&error];
 
     if (success) {
         NSLog(@"✅ 출력 완료");

@@ -173,14 +173,19 @@ class MethodChannelBlueberryPrinter extends BlueberryPrinterPlatform {
 
   @override
   Future<bool> printOrderFromSocket(
-    Map<String, dynamic> orderData,
-  ) async {
+    Map<String, dynamic> orderData, {
+    String language = 'kor',
+    String currency = 'KRW',
+  }) async {
     print(' [DEBUG] MethodChannel: printOrderFromSocket 호출 시작');
     print(' [DEBUG] MethodChannel: 전달할 데이터: $orderData');
+    print(' [DEBUG] MethodChannel: 언어: $language, 화폐: $currency');
 
     try {
       final bool result = await methodChannel.invokeMethod('printOrderFromSocket', {
         'orderData': orderData,
+        'language': language,
+        'currency': currency,
       });
       print(' [DEBUG] MethodChannel: 성공 결과: $result');
       return result;

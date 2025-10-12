@@ -9,7 +9,10 @@
       "Bash(xcodebuild:*)",
       "Bash(dir:*)",
       "mcp__Framelink_Figma_MCP__get_figma_data",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(pod install)",
+      "Bash(export LANG=en_US.UTF-8)",
+      "Bash(fvm flutter:*)"
     ],
     "deny": [],
     "ask": []

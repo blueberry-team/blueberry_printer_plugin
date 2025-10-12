@@ -652,20 +652,22 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// 주문 알림 출력 (소켓 시뮬레이션)
+  /// 주문 알림 출력 (소켓 시뮬레이션) - 한국어
   Future<void> _printSocketNotification() async {
     try {
-      print('🔍 [DEBUG] 주문 알림 출력 시작');
+      print('🔍 [DEBUG] 주문 알림 출력 시작 (한국어)');
       final notificationData = getSampleSocketNotification();
 
       final success = await _blueberryPrinterPlugin.printOrderFromSocket(
         notificationData,
+        language: 'kor',
+        currency: 'KRW',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '주문 알림 출력 완료' : '주문 알림 출력 실패'),
+            content: Text(success ? '주문 알림 출력 완료 (한국어)' : '주문 알림 출력 실패'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -683,18 +685,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// 주문 변경 알림 출력
+  /// 주문 변경 알림 출력 - 한국어
   Future<void> _printUpdateNotification() async {
     try {
       final notificationData = getSampleUpdateNotification();
       final success = await _blueberryPrinterPlugin.printOrderFromSocket(
         notificationData,
+        language: 'kor',
+        currency: 'KRW',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '주문 변경 알림 출력 완료' : '주문 변경 알림 출력 실패'),
+            content: Text(success ? '주문 변경 알림 출력 완료 (한국어)' : '주문 변경 알림 출력 실패'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -711,18 +715,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// 주문 취소 알림 출력
+  /// 주문 취소 알림 출력 - 한국어
   Future<void> _printCancelNotification() async {
     try {
       final notificationData = getSampleCancelNotification();
       final success = await _blueberryPrinterPlugin.printOrderFromSocket(
         notificationData,
+        language: 'kor',
+        currency: 'KRW',
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? '주문 취소 알림 출력 완료' : '주문 취소 알림 출력 실패'),
+            content: Text(success ? '주문 취소 알림 출력 완료 (한국어)' : '주문 취소 알림 출력 실패'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -732,6 +738,196 @@ class _MyHomePageState extends State<MyHomePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('주문 취소 알림 출력 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ========== 영어 소켓 알림 ==========
+
+  /// 주문 알림 출력 (소켓 시뮬레이션) - 영어
+  Future<void> _printSocketNotificationEnglish() async {
+    try {
+      print('🔍 [DEBUG] 주문 알림 출력 시작 (영어)');
+      final notificationData = getSampleSocketNotificationEnglish();
+
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'eng',
+        currency: 'USD',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Order notification printed (English)' : 'Print failed'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('주문 알림 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Print failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 변경 알림 출력 - 영어
+  Future<void> _printUpdateNotificationEnglish() async {
+    try {
+      final notificationData = getSampleUpdateNotificationEnglish();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'eng',
+        currency: 'USD',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Order update printed (English)' : 'Print failed'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Print failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 취소 알림 출력 - 영어
+  Future<void> _printCancelNotificationEnglish() async {
+    try {
+      final notificationData = getSampleCancelNotificationEnglish();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'eng',
+        currency: 'USD',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Order cancel printed (English)' : 'Print failed'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Print failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // ========== 일본어 소켓 알림 ==========
+
+  /// 주문 알림 출력 (소켓 시뮬레이션) - 일본어
+  Future<void> _printSocketNotificationJapanese() async {
+    try {
+      print('🔍 [DEBUG] 주문 알림 출력 시작 (일본어)');
+      final notificationData = getSampleSocketNotificationJapanese();
+
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'jpn',
+        currency: 'JPY',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '注文通知印刷完了（日本語）' : '印刷失敗'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('주문 알림 출력 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('印刷失敗: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 변경 알림 출력 - 일본어
+  Future<void> _printUpdateNotificationJapanese() async {
+    try {
+      final notificationData = getSampleUpdateNotificationJapanese();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'jpn',
+        currency: 'JPY',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '注文変更通知印刷完了（日本語）' : '印刷失敗'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('印刷失敗: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// 주문 취소 알림 출력 - 일본어
+  Future<void> _printCancelNotificationJapanese() async {
+    try {
+      final notificationData = getSampleCancelNotificationJapanese();
+      final success = await _blueberryPrinterPlugin.printOrderFromSocket(
+        notificationData,
+        language: 'jpn',
+        currency: 'JPY',
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '注文取消通知印刷完了（日本語）' : '印刷失敗'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('印刷失敗: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -964,7 +1160,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
                         const Text(
-                          '주문 알림 (소켓)',
+                          '주문 알림 (소켓) - 한국어',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -973,13 +1169,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-                        // 주문 추가 알림
+                        // 주문 추가 알림 - 한국어
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _printSocketNotification,
                             icon: const Icon(Icons.notifications_active),
-                            label: const Text('주문 추가 알림'),
+                            label: const Text('주문 추가 알림 (KOR)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.indigo,
                               foregroundColor: Colors.white,
@@ -988,13 +1184,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-                        // 주문 변경 알림
+                        // 주문 변경 알림 - 한국어
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _printUpdateNotification,
                             icon: const Icon(Icons.update),
-                            label: const Text('주문 변경 알림'),
+                            label: const Text('주문 변경 알림 (KOR)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.amber,
                               foregroundColor: Colors.white,
@@ -1003,15 +1199,131 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-                        // 주문 취소 알림
+                        // 주문 취소 알림 - 한국어
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _printCancelNotification,
                             icon: const Icon(Icons.cancel),
-                            label: const Text('주문 취소 알림'),
+                            label: const Text('주문 취소 알림 (KOR)'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                        const Divider(),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        const Text(
+                          '주문 알림 (소켓) - 영어',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 추가 알림 - 영어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printSocketNotificationEnglish,
+                            icon: const Icon(Icons.notifications_active),
+                            label: const Text('Order Added (ENG)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 변경 알림 - 영어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printUpdateNotificationEnglish,
+                            icon: const Icon(Icons.update),
+                            label: const Text('Order Updated (ENG)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 취소 알림 - 영어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printCancelNotificationEnglish,
+                            icon: const Icon(Icons.cancel),
+                            label: const Text('Order Cancelled (ENG)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[900],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+                        const Divider(),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        const Text(
+                          '주문 알림 (소켓) - 일본어',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 추가 알림 - 일본어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printSocketNotificationJapanese,
+                            icon: const Icon(Icons.notifications_active),
+                            label: const Text('注文追加 (JPN)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.purple[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 변경 알림 - 일본어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printUpdateNotificationJapanese,
+                            icon: const Icon(Icons.update),
+                            label: const Text('注文変更 (JPN)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple[700],
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+
+                        // 주문 취소 알림 - 일본어
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _printCancelNotificationJapanese,
+                            icon: const Icon(Icons.cancel),
+                            label: const Text('注文取消 (JPN)'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.pink[900],
                               foregroundColor: Colors.white,
                             ),
                           ),
