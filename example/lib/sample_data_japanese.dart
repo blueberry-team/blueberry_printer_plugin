@@ -1,48 +1,58 @@
-import 'package:blueberry_printer/models/order_detail_response.dart';
+import 'package:blueberry_printer/models/order_history_total_response.dart';
 
-/// 일본 샘플 주문 데이터 (JPY - 정수 표시)
-OrderDetailResponse getSampleJapaneseOrder() {
-  return OrderDetailResponse(
+/// 일본 샘플 누적 주문 데이터 (JPY - 정수 표시)
+OrderHistoryTotalResponse getSampleJapaneseOrder() {
+  return OrderHistoryTotalResponse(
     orderId: 'order_001_jpn',
-    orderNumber: 'ORD-2025-002',
-    tableNumber: 3,
-    tableName: 'テーブル 3',
-    totalPrice: 3250.0,
-    orderVersion: [
-      OrderVersionResponse(
-        versionId: 'v1',
-        orderBy: 'TABLE',
-        versionNumber: 1,
-        createdAt: '2025-10-05 13:15:00',
-        orderItems: [
-          OrderDetailItemResponse(
-            menuId: 'menu_101',
-            menuName: 'ラーメン',
-            quantity: 2,
-            price: 1200.0,
-            options: [
-              MenuOptionResponse(
-                optionMenuItemId: 'opt_101',
-                optionMenuItemName: 'トッピング',
-                isRequired: false,
-                isMultiple: true,
-                selectedItems: [
-                  SelectedOptionItemResponse(
-                    menuOptionItemId: 'item_101',
-                    itemName: 'チャーシュー追加',
-                    itemPrice: 300.0,
-                    quantity: 1,
-                  ),
-                ],
+    totalPrice: 6200.0, // メニュー + オプション 合計
+    orderMenus: [
+      // メニュー 1: ラーメン
+      OrderMenu(
+        menuId: 'menu_101',
+        menuName: 'ラーメン',
+        quantity: 3,
+        price: 3600.0, // 基本価格 1200×3, オプション別途
+        menuOptionItems: [
+          MenuOptionItem(
+            menuOptionItemId: 'opt_101',
+            menuOptionItemName: 'トッピング',
+            selectedItems: [
+              SelectedOptionItem(
+                menuOptionItemDetailId: 'item_101',
+                menuOptionItemDetailName: 'チャーシュー追加',
+                menuOptionItemDetailPrice: 300.0,
+                menuOptionItemDetailQuantity: 2,
               ),
             ],
           ),
-          OrderDetailItemResponse(
-            menuId: 'menu_102',
-            menuName: '餃子',
-            quantity: 1,
-            price: 550.0,
-            options: [],
+        ],
+      ),
+      // メニュー 2: 餃子
+      OrderMenu(
+        menuId: 'menu_102',
+        menuName: '餃子',
+        quantity: 2,
+        price: 1100.0, // 基本価格 550×2, オプションなし
+        menuOptionItems: [],
+      ),
+      // メニュー 3: チャーハン
+      OrderMenu(
+        menuId: 'menu_103',
+        menuName: 'チャーハン',
+        quantity: 1,
+        price: 900.0,
+        menuOptionItems: [
+          MenuOptionItem(
+            menuOptionItemId: 'opt_102',
+            menuOptionItemName: '辛さ',
+            selectedItems: [
+              SelectedOptionItem(
+                menuOptionItemDetailId: 'item_102',
+                menuOptionItemDetailName: '激辛',
+                menuOptionItemDetailPrice: 0.0,
+                menuOptionItemDetailQuantity: 1,
+              ),
+            ],
           ),
         ],
       ),

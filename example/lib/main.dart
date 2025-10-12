@@ -500,11 +500,9 @@ class _MyHomePageState extends State<MyHomePage> {
       bool success = await _blueberryPrinterPlugin.printTotalOrder(
         cumulativeOrderData, // OrderHistoryTotalResponse 객체 그대로 사용
         storeName: '카페 블루베리',
-        tableNumber: 'VIP-7', // 테이블 번호 추가 (주문 데이터의 테이블명을 덮어씀)
+        tableNumber: '5',
         storeAddress: '서울특별시 강남구 테헤란로 123',
-        phoneNumber: '02-1234-5678',
-        businessNumber: '123-45-67890',
-        thankYouMessage: '누적 주문에 감사드립니다!\n다음에도 많은 이용 부탁드립니다.',
+        thankYouMessage: '감사합니다!\n다음에 또 방문해 주세요.',
         language: 'kor',
         currency: 'KRW',
       );
@@ -549,12 +547,11 @@ class _MyHomePageState extends State<MyHomePage> {
       print('🔍 [DEBUG] 한국 영수증 출력 시작');
       final koreanOrderData = getSampleKoreanOrder();
 
-      final success = await _blueberryPrinterPlugin.printSingleOrder(
+      final success = await _blueberryPrinterPlugin.printTotalOrder(
         koreanOrderData,
         storeName: '블루베리 카페',
+        tableNumber: '5',
         storeAddress: '서울특별시 강남구 테헤란로 427',
-        phoneNumber: '02-1234-5678',
-        businessNumber: '123-45-67890',
         thankYouMessage: '감사합니다!\n다음에 또 방문해 주세요.',
         language: 'kor',
         currency: 'KRW',
@@ -587,12 +584,11 @@ class _MyHomePageState extends State<MyHomePage> {
       print('🔍 [DEBUG] 일본 영수증 출력 시작');
       final japaneseOrderData = getSampleJapaneseOrder();
 
-      final success = await _blueberryPrinterPlugin.printSingleOrder(
+      final success = await _blueberryPrinterPlugin.printTotalOrder(
         japaneseOrderData,
         storeName: 'ブルーベリーカフェ',
+        tableNumber: '3',
         storeAddress: '東京都渋谷区恵比寿1-2-3',
-        phoneNumber: '03-1234-5678',
-        businessNumber: '123-45-67890',
         thankYouMessage: 'ありがとうございます！\nまたお越しください。',
         language: 'jpn',
         currency: 'JPY',
@@ -625,12 +621,11 @@ class _MyHomePageState extends State<MyHomePage> {
       print('🔍 [DEBUG] 미국 영수증 출력 시작');
       final usdOrderData = getSampleUSDOrder();
 
-      final success = await _blueberryPrinterPlugin.printSingleOrder(
+      final success = await _blueberryPrinterPlugin.printTotalOrder(
         usdOrderData,
         storeName: 'Blueberry Cafe',
+        tableNumber: '7',
         storeAddress: '123 Main St, New York, NY 10001',
-        phoneNumber: '+1-212-555-1234',
-        businessNumber: '12-3456789',
         thankYouMessage: 'Thank you!\nPlease visit us again.',
         language: 'eng',
         currency: 'USD',
@@ -892,28 +887,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-                        // 단일 주문
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _printOrderReceipt,
-                            icon: const Icon(Icons.receipt),
-                            label: const Text('단일 주문'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.01),
-
                         // 전체 주문
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: _printCumulativeOrderReceipt,
                             icon: const Icon(Icons.library_books),
-                            label: const Text('전체 주문 (누적)'),
+                            label: const Text('누적 주문'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepOrange,
                               foregroundColor: Colors.white,

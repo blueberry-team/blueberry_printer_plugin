@@ -6,6 +6,9 @@ import com.example.blueberry_printer.common.EscPosConstants
 import com.example.blueberry_printer.common.PrinterCommands
 import com.example.blueberry_printer.common.KoreanTextRenderer
 import com.example.blueberry_printer.common.PrintConstants
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 전체 주문(누적) 영수증을 텍스트 파싱 없이 직접 출력하는 클래스
@@ -46,12 +49,6 @@ object MultipleOrderDirectPrinter {
             // 다국어 텍스트 가져오기
             val localizer = Localizer(language)
 
-            // 주문 기본 정보 추출
-            val orderNumber = orderData["orderNumber"] as? String
-                ?: localizer.getText("no_order_number")
-            val tableName = orderData["tableName"] as? String
-                ?: localizer.getText("no_table_info")
-
             // API 응답에서 제공하는 총 금액 사용
             val grandTotalPrice = (orderData["totalPrice"] as? Number)?.toDouble() ?: 0.0
             Log.d(TAG, "응답에서 제공된 총 가격: $grandTotalPrice")
@@ -76,6 +73,14 @@ object MultipleOrderDirectPrinter {
 
             Log.d(TAG, "누적 주문 처리 시작 - 버전 수: ${orderVersions.size}")
 
+            // 날짜/시간 출력 (현재 시간)
+            printDateTime(outputStream, language)
+
+            // 테이블 번호 출력 (박스로 강조) - 파라미터로 받은 값 사용
+            if (tableNumber != null) {
+                printTableNumber(outputStream, tableNumber)
+            }
+
             // 타이틀 출력 (매장명)
             printTitle(outputStream, storeName)
 
@@ -85,20 +90,11 @@ object MultipleOrderDirectPrinter {
             // 구분선 출력
             printSeparator(outputStream)
 
-            // 주문 정보 출력
-            printOrderInfo(outputStream, orderNumber, tableName, localizer)
-
             // 누적 상품 목록 출력
             printMergedMenuList(outputStream, orderVersions, currency, localizer)
 
-            // 줄바꿈
-            feedPaper(outputStream, PrintConstants.LineFeed.BEFORE_TOTAL)
-
             // 총 합계 출력
             printGrandTotal(outputStream, grandTotalPrice, currency, localizer)
-
-            // 줄바꿈
-            feedPaper(outputStream, PrintConstants.LineFeed.AFTER_TOTAL)
 
             // 감사 메시지 출력
             printThankYouMessage(outputStream, thankYouMessage, localizer)
@@ -118,24 +114,84 @@ object MultipleOrderDirectPrinter {
     }
 
     /**
+     * 날짜/시간 출력 (현재 시간, 다국어)
+     */
+    private fun printDateTime(outputStream: OutputStream, language: String) {
+        val currentDate = Date()
+        val dateFormat = when (language) {
+            "eng" -> SimpleDateFormat("MMM d (E) HH:mm", Locale.ENGLISH)
+            "jpn" -> SimpleDateFormat("M月d日 (E) HH:mm", Locale.JAPANESE)
+            else -> SimpleDateFormat("M월 d일 (E) HH:mm", Locale.KOREAN) // "kor" 기본값
+        }
+
+        val formattedDate = dateFormat.format(currentDate)
+
+        val image = KoreanTextRenderer.createTextImage(
+            formattedDate,
+            24f, // 날짜 (소켓과 동일)
+            false,
+            KoreanTextRenderer.TextAlign.LEFT
+        )
+        val bitmap = KoreanTextRenderer.convertToBitmap(image)
+        outputStream.write(bitmap)
+        outputStream.flush()
+    }
+
+    /**
      * 타이틀 출력 (매장명)
      */
     private fun printTitle(outputStream: OutputStream, storeName: String) {
         val image = KoreanTextRenderer.createTextImage(
             storeName,
-            PrintConstants.FontSize.TITLE,
+            42f, // 소켓 메뉴 크기와 동일
             true,
             KoreanTextRenderer.TextAlign.CENTER
         )
         val bitmap = KoreanTextRenderer.convertToBitmap(image)
         outputStream.write(bitmap)
         outputStream.flush()
-
-        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_TITLE)
     }
 
     /**
-     * 매장정보 출력
+     * 테이블 번호 출력 (박스로 강조)
+     */
+    private fun printTableNumber(outputStream: OutputStream, tableNumber: String) {
+        // 박스 윗부분
+        val boxTop = "┌──────────────┐"
+        val boxTopImage = KoreanTextRenderer.createTextImage(
+            boxTop,
+            32f,
+            false,
+            KoreanTextRenderer.TextAlign.CENTER
+        )
+        outputStream.write(KoreanTextRenderer.convertToBitmap(boxTopImage))
+        outputStream.flush()
+
+        // 테이블 번호 (박스 중간)
+        val tableText = "│  테이블 $tableNumber  │"
+        val tableImage = KoreanTextRenderer.createTextImage(
+            tableText,
+            42f, // 소켓 메뉴 크기와 동일
+            true, // 굵게
+            KoreanTextRenderer.TextAlign.CENTER
+        )
+        outputStream.write(KoreanTextRenderer.convertToBitmap(tableImage))
+        outputStream.flush()
+
+        // 박스 아랫부분
+        val boxBottom = "└──────────────┘"
+        val boxBottomImage = KoreanTextRenderer.createTextImage(
+            boxBottom,
+            32f,
+            false,
+            KoreanTextRenderer.TextAlign.CENTER
+        )
+        outputStream.write(KoreanTextRenderer.convertToBitmap(boxBottomImage))
+        outputStream.flush()
+    }
+
+    /**
+     * 매장정보 출력 (주소만)
      */
     private fun printStoreInfo(
         outputStream: OutputStream,
@@ -144,30 +200,16 @@ object MultipleOrderDirectPrinter {
         businessNumber: String?,
         localizer: Localizer
     ) {
-        val sb = StringBuilder()
-
-        if (storeAddress != null || phoneNumber != null || businessNumber != null) {
-            if (storeAddress != null) {
-                sb.append("$storeAddress\n")
-            }
-            if (phoneNumber != null) {
-                sb.append("${localizer.getText("phone")}: $phoneNumber\n")
-            }
-            if (businessNumber != null) {
-                sb.append("${localizer.getText("business_number")}: $businessNumber\n")
-            }
-
+        if (storeAddress != null) {
             val image = KoreanTextRenderer.createTextImage(
-                sb.toString().trim(),
-                PrintConstants.FontSize.STORE_INFO,
+                storeAddress,
+                28f, // 소켓 옵션 크기와 동일
                 false,
                 KoreanTextRenderer.TextAlign.CENTER
             )
             val bitmap = KoreanTextRenderer.convertToBitmap(image)
             outputStream.write(bitmap)
             outputStream.flush()
-
-            feedPaper(outputStream, PrintConstants.LineFeed.AFTER_STORE_INFO)
         }
     }
 
@@ -184,35 +226,6 @@ object MultipleOrderDirectPrinter {
         val bitmap = KoreanTextRenderer.convertToBitmap(image)
         outputStream.write(bitmap)
         outputStream.flush()
-
-        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_SEPARATOR)
-    }
-
-    /**
-     * 주문 정보 출력
-     */
-    private fun printOrderInfo(
-        outputStream: OutputStream,
-        orderNumber: String,
-        tableName: String,
-        localizer: Localizer
-    ) {
-        val orderInfoText = """
-${localizer.getText("order_number")}: $orderNumber
-${localizer.getText("table")}: $tableName
-        """.trimIndent()
-
-        val image = KoreanTextRenderer.createTextImage(
-            orderInfoText,
-            PrintConstants.FontSize.ORDER_INFO,
-            false,
-            KoreanTextRenderer.TextAlign.CENTER
-        )
-        val bitmap = KoreanTextRenderer.convertToBitmap(image)
-        outputStream.write(bitmap)
-        outputStream.flush()
-
-        feedPaper(outputStream, PrintConstants.LineFeed.AFTER_ORDER_INFO)
     }
 
     /**
@@ -278,10 +291,10 @@ ${localizer.getText("table")}: $tableName
 
                 // 메뉴명 + 옵션 조합을 기준으로 한 고유 키
                 val uniqueKey = "$menuName$optionKey"
-                // API에서 제공하는 가격 사용
+                // 메뉴 가격 + 옵션 가격 합산
                 val price = (item["price"] as? Number)?.toDouble() ?: 0.0
-                val totalItemPrice = price
-                Log.d(TAG, "[메뉴: $menuName] 가격: $price = $totalItemPrice")
+                val totalItemPrice = price + optionTotalPrice
+                Log.d(TAG, "[메뉴: $menuName] 기본가격: $price + 옵션가격: $optionTotalPrice = 총가격: $totalItemPrice")
 
                 // 메뉴 아이템 합치기 (동일한 메뉴 + 옵션 조합인 경우에만)
                 if (mergedItems.containsKey(uniqueKey)) {
@@ -300,6 +313,9 @@ ${localizer.getText("table")}: $tableName
             }
         }
 
+        // 다국어 옵션 prefix 가져오기
+        val optionPrefix = localizer.getText("option")
+
         // 합쳐진 상품 출력
         for ((uniqueKey, itemData) in mergedItems) {
             val menuName = itemData["menuName"] as String
@@ -307,10 +323,10 @@ ${localizer.getText("table")}: $tableName
             val totalPrice = itemData["totalPrice"] as Double
             val options = itemData["options"] as List<Map<String, Any>>
 
-            // 메뉴 기본 가격만 표시 (옵션 가격 제외)
+            // 메뉴 라인: 메뉴명 x수량 = 가격 형식
             sb.append("$menuName x$quantity = ${formatPrice(totalPrice, currency)}$currencySymbol\n")
 
-            // 옵션 표시 (가격 포함)
+            // 옵션 표시 (가격 제거)
             for (option in options) {
                 val selectedItems = option["selectedItems"] as? List<Map<String, Any>> ?: emptyList()
                 for (selectedItem in selectedItems) {
@@ -329,28 +345,63 @@ ${localizer.getText("table")}: $tableName
 
                     Log.d(TAG, "옵션 출력: 메뉴=$menuName, 옵션=$optionName, 가격=$optionPrice, 수량=$optionQuantity")
 
-                    // 옵션 총 가격 계산
-                    val optionTotalPrice = optionPrice * optionQuantity
-
-                    // 옵션 이름과 가격 표시
+                    // 옵션 이름만 표시 (가격 제거, 다국어)
                     if (optionQuantity > 1) {
-                        sb.append("  - $optionName x$optionQuantity = ${formatPrice(optionTotalPrice, currency)}$currencySymbol\n")
+                        sb.append("  $optionPrefix $optionName x$optionQuantity\n")
                     } else {
-                        sb.append("  - $optionName = ${formatPrice(optionTotalPrice, currency)}$currencySymbol\n")
+                        sb.append("  $optionPrefix $optionName\n")
                     }
                 }
             }
         }
 
-        val image = KoreanTextRenderer.createTextImage(
-            sb.toString().trim(),
-            PrintConstants.FontSize.MENU_LIST,
-            false,
-            KoreanTextRenderer.TextAlign.LEFT
-        )
-        val bitmap = KoreanTextRenderer.convertToBitmap(image)
-        outputStream.write(bitmap)
-        outputStream.flush()
+        // 메뉴 목록 출력
+        val menuLines = StringBuilder()
+        val optionLines = StringBuilder()
+
+        val lines = sb.toString().trim().split("\n")
+        for (line in lines) {
+            if (line.startsWith("  $optionPrefix")) {
+                // 옵션 라인
+                optionLines.append(line).append("\n")
+            } else {
+                // 메뉴 라인
+                // 이전에 쌓인 옵션이 있으면 먼저 출력
+                if (optionLines.isNotEmpty()) {
+                    val optionImage = KoreanTextRenderer.createTextImage(
+                        optionLines.toString().trim(),
+                        24f, // 옵션 크기 (28f - 4 = 24f)
+                        false,
+                        KoreanTextRenderer.TextAlign.LEFT
+                    )
+                    outputStream.write(KoreanTextRenderer.convertToBitmap(optionImage))
+                    outputStream.flush()
+                    optionLines.clear()
+                }
+
+                // 메뉴 라인 출력
+                val menuImage = KoreanTextRenderer.createTextImage(
+                    line,
+                    32f, // 메뉴 크기
+                    false,
+                    KoreanTextRenderer.TextAlign.LEFT
+                )
+                outputStream.write(KoreanTextRenderer.convertToBitmap(menuImage))
+                outputStream.flush()
+            }
+        }
+
+        // 마지막에 남은 옵션 출력
+        if (optionLines.isNotEmpty()) {
+            val optionImage = KoreanTextRenderer.createTextImage(
+                optionLines.toString().trim(),
+                24f, // 옵션 크기 (28f - 4 = 24f)
+                false,
+                KoreanTextRenderer.TextAlign.LEFT
+            )
+            outputStream.write(KoreanTextRenderer.convertToBitmap(optionImage))
+            outputStream.flush()
+        }
     }
 
     /**
@@ -367,7 +418,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             totalText,
-            PrintConstants.FontSize.TOTAL,
+            42f, // 소켓 메뉴 크기와 동일
             true,
             KoreanTextRenderer.TextAlign.RIGHT
         )
@@ -388,7 +439,7 @@ ${localizer.getText("table")}: $tableName
 
         val image = KoreanTextRenderer.createTextImage(
             message,
-            PrintConstants.FontSize.THANK_YOU,
+            28f, // 소켓 옵션 크기와 동일
             false,
             KoreanTextRenderer.TextAlign.CENTER
         )
@@ -455,6 +506,7 @@ ${localizer.getText("table")}: $tableName
                     "order_time" -> "Order Time"
                     "total" -> "Total"
                     "grand_total" -> "Grand Total"
+                    "option" -> "Option/"
                     "thank_you_default" -> "Thank you!\nPlease visit us again."
                     "phone" -> "Phone"
                     "business_number" -> "Business No"
@@ -472,6 +524,7 @@ ${localizer.getText("table")}: $tableName
                     "order_time" -> "注文時刻"
                     "total" -> "合計"
                     "grand_total" -> "総合計"
+                    "option" -> "オプション/"
                     "thank_you_default" -> "ありがとうございます！\nまたお越しください。"
                     "phone" -> "電話"
                     "business_number" -> "事業者番号"
@@ -489,6 +542,7 @@ ${localizer.getText("table")}: $tableName
                     "order_time" -> "주문시간"
                     "total" -> "합계"
                     "grand_total" -> "총 합계"
+                    "option" -> "옵션/"
                     "thank_you_default" -> "감사합니다!\n다음에 또 방문해 주세요."
                     "phone" -> "전화"
                     "business_number" -> "사업자등록번호"

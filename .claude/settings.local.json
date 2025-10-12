@@ -6,9 +6,16 @@
       "Bash(git checkout:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(dir:*)",
+      "mcp__Framelink_Figma_MCP__get_figma_data",
+      "Bash(flutter:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "Framelink Figma MCP"
+  ]
 }

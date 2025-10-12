@@ -128,14 +128,14 @@ class DummyDirectPrintData {
   static OrderHistoryTotalResponse getTotalOrderData() {
     return OrderHistoryTotalResponse(
       orderId: 'DIRECT_TOTAL_ORDER_001',
-      totalPrice: 67500, // 누적 총 금액
+      totalPrice: 114400, // 누적 총 금액 (메뉴 + 옵션 포함)
       orderMenus: [
         // 메뉴 1: 에스프레소 (누적 3개)
         OrderMenu(
           menuId: 'MENU_TOTAL_001',
           menuName: '에스프레소',
           quantity: 3,
-          price: 3500,
+          price: 10500, // 3개 기본 가격 (3500*3 = 10500, 옵션 별도)
           menuOptionItems: [
             MenuOptionItem(
               menuOptionItemId: 'OPT_TOTAL_001',
@@ -156,7 +156,7 @@ class DummyDirectPrintData {
           menuId: 'MENU_TOTAL_002',
           menuName: '아포가토',
           quantity: 2,
-          price: 7500,
+          price: 15000, // 2개 기본 가격 (7500*2 = 15000, 옵션 별도)
           menuOptionItems: [
             MenuOptionItem(
               menuOptionItemId: 'OPT_TOTAL_002',
@@ -183,7 +183,7 @@ class DummyDirectPrintData {
           menuId: 'MENU_TOTAL_003',
           menuName: '마카롱 세트 (5개입)',
           quantity: 4,
-          price: 12000,
+          price: 48000, // 4개 기본 가격 (12000*4 = 48000, 옵션 없음)
           menuOptionItems: [],
         ),
         // 메뉴 4: 밀크티 (누적 2개)
@@ -191,7 +191,7 @@ class DummyDirectPrintData {
           menuId: 'MENU_TOTAL_004',
           menuName: '타로 밀크티',
           quantity: 2,
-          price: 5500,
+          price: 11000, // 2개 기본 가격 (5500*2 = 11000, 옵션 별도)
           menuOptionItems: [
             MenuOptionItem(
               menuOptionItemId: 'OPT_TOTAL_003',
@@ -224,7 +224,7 @@ class DummyDirectPrintData {
           menuId: 'MENU_TOTAL_005',
           menuName: '블루베리 스콘',
           quantity: 5,
-          price: 3800,
+          price: 19000, // 5개 기본 가격 (3800*5 = 19000, 옵션 무료)
           menuOptionItems: [
             MenuOptionItem(
               menuOptionItemId: 'OPT_TOTAL_005',
@@ -245,7 +245,7 @@ class DummyDirectPrintData {
           menuId: 'MENU_TOTAL_006',
           menuName: '그린티 라떼 (HOT)',
           quantity: 1,
-          price: 5800,
+          price: 5800, // 1개 가격 (5800, 옵션 없음)
           menuOptionItems: [],
         ),
       ],
