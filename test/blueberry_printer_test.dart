@@ -28,9 +28,6 @@ class MockBlueberryPrinterPlatform
   Future<bool> printReceipt(String receiptText) async => true;
 
   @override
-  Future<bool> printSampleReceipt() async => true;
-
-  @override
   Future<bool> disconnect() async => true;
 
   @override

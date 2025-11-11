@@ -270,8 +270,20 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _searchDevices() async {
     print("🔍 [DEBUG] _searchDevices() 시작");
 
-    // 권한 요청 제거 - 레퍼런스 앱처럼 바로 스캔 시도
-    print("🔍 [DEBUG] 권한 요청 없이 바로 스캔 시작");
+    // 권한 먼저 확인 및 요청
+    print("🔍 [DEBUG] 블루투스 권한 확인 및 요청");
+    final hasPermission = await _requestBluetoothPermissions();
+    if (!hasPermission) {
+      print("🔍 [DEBUG] 권한 없음 - 검색 중단");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('블루투스 권한이 필요합니다. 설정에서 권한을 허용해주세요.')),
+        );
+      }
+      return;
+    }
+
+    print("🔍 [DEBUG] 권한 확인 완료 - 검색 시작");
 
     setState(() {
       _isScanning = true;

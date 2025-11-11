@@ -30,9 +30,11 @@ object BluetoothDeviceSearcher {
             Log.d(TAG, "페어링된 기기 수: ${pairedDevices.size}")
 
             pairedDevices.map { device ->
+                val deviceName = device.name ?: "알 수 없는 기기"
                 mapOf(
-                    "name" to (device.name ?: "알 수 없는 기기"),
-                    "address" to device.address
+                    "name" to deviceName,
+                    "address" to device.address,
+                    "printerType" to detectPrinterType(deviceName)
                 )
             }.also {
                 Log.d(TAG, "검색 완료: ${it.size}개 기기")
@@ -87,6 +89,30 @@ object BluetoothDeviceSearcher {
         } catch (e: Exception) {
             Log.e(TAG, "블루투스 상태 확인 실패", e)
             false
+        }
+    }
+
+    /**
+     * 프린터 타입 감지
+     * @param deviceName 기기 이름
+     * @return 프린터 타입 ("star_micronics" or "esc_pos")
+     */
+    fun detectPrinterType(deviceName: String): String {
+        val lowerName = deviceName.lowercase()
+
+        return when {
+            // Star Micronics 프린터 모델명 패턴
+            lowerName.contains("mcp") -> "star_micronics"  // mCP31LB, mCP30, etc.
+            lowerName.contains("mc-print") -> "star_micronics"
+            lowerName.contains("mc print") -> "star_micronics"
+            lowerName.contains("tsp") -> "star_micronics"  // TSP100, TSP650, etc.
+            lowerName.contains("star") -> "star_micronics"
+            lowerName.contains("sm-") -> "star_micronics"  // SM- 시리즈
+
+            // 기타 모든 프린터는 ESC/POS로 간주
+            else -> "esc_pos"
+        }.also {
+            Log.d(TAG, "프린터 타입 감지: $deviceName -> $it")
         }
     }
 

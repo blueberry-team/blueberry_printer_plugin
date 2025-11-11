@@ -2,7 +2,11 @@
   "cSpell.words": [
     "ARGB",
     "blueberry",
-    "Rfcomm"
+    "kotlinx",
+    "Rfcomm",
+    "stario",
+    "starmicronics",
+    "starxpandcommand"
   ],
   "dart.flutterSdkPath": ".fvm/versions/3.32.8"
 }
