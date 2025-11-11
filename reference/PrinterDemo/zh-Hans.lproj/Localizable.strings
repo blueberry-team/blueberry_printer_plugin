@@ -1,9 +1,0 @@
-OK = "确认";
-Cancel = "取消";
-SelectPrinter = "选择打印机";
-ConnectIP = "连接IP地址";
-InputIPAddress = "请输入IP地址";
-NotConnected = "未连接";
-Connected = "点击断开";
-CameraPrivate = "相机权限被关闭，请到“设置->隐私->相机”中开启";
-FontSize = "字体放大倍数";

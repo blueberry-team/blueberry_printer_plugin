@@ -1,3 +1,4 @@
+import 'package:blueberry_printer/models/connection_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:blueberry_printer/blueberry_printer.dart';
 import 'package:blueberry_printer/blueberry_printer_platform_interface.dart';
@@ -60,6 +61,22 @@ class MockBlueberryPrinterPlatform
     String currency = 'KRW',
   }) async =>
       true;
+
+  @override
+  // TODO: implement connectionStatusStream
+  Stream<ConnectionStatus> get connectionStatusStream => throw UnimplementedError();
+
+  @override
+  Future<bool> printOrderFromSocket(Map<String, dynamic> orderData, {String language = 'kor', String currency = 'KRW'}) {
+    // TODO: implement printOrderFromSocket
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> printText(String text, {double fontSize = 20.0, bool isBold = false, String align = 'LEFT'}) {
+    // TODO: implement printText
+    throw UnimplementedError();
+  }
 }
 
 void main() {
