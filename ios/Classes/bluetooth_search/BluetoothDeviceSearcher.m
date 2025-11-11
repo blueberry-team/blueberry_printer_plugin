@@ -72,4 +72,31 @@
     return YES;
 }
 
++ (NSString*)detectPrinterType:(NSString*)deviceName {
+    NSString* lowerName = [deviceName lowercaseString];
+
+    // Star Micronics 프린터 패턴 감지
+    if ([lowerName containsString:@"mcp"]) {
+        return @"star_micronics";  // mCP31LB, mCP30, etc.
+    }
+    if ([lowerName containsString:@"mc-print"]) {
+        return @"star_micronics";
+    }
+    if ([lowerName containsString:@"mc print"]) {
+        return @"star_micronics";
+    }
+    if ([lowerName containsString:@"tsp"]) {
+        return @"star_micronics";  // TSP100, TSP650, etc.
+    }
+    if ([lowerName containsString:@"star"]) {
+        return @"star_micronics";
+    }
+    if ([lowerName containsString:@"sm-"]) {
+        return @"star_micronics";  // SM- 시리즈
+    }
+
+    // 기본값: ESC/POS
+    return @"esc_pos";
+}
+
 @end

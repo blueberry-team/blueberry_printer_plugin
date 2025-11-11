@@ -2,18 +2,15 @@
 //  BlueberryPrinterPlugin.m
 //  blueberry_printer
 //
-//  Created for Flutter plugin (리팩토링 버전)
+//  Created for Flutter plugin (드라이버 패턴 리팩토링 버전)
 //
 
 #import "BlueberryPrinterPlugin.h"
-#import "single_order/SingleOrderDirectPrinter.h"
-#import "multiple_order/MultipleOrderDirectPrinter.h"
-#import "order_notification/OrderNotificationPrinter.h"
+#import "drivers/PrinterDriver.h"
+#import "drivers/EscPosDriver.h"
+#import "drivers/StarIoDriver.h"
+#import "bluetooth_search/BluetoothDeviceSearcher.h"
 #import "common/DisconnectReason.h"
-#import "common/KoreanTextRenderer.h"
-#import "common/PrinterCommands.h"
-#import "common/PrinterUtilities.h"
-#import "common/EscPosConstants.h"
 
 @interface BlueberryPrinterPlugin () <FlutterStreamHandler>
 {
@@ -23,6 +20,7 @@
     BOOL _isScanning;
 }
 
+@property (nonatomic, strong) id<PrinterDriver> currentDriver;
 @property (nonatomic, strong) Printer* connectedPrinter;
 @property (nonatomic, strong) FlutterEventSink eventSink;
 
@@ -125,25 +123,25 @@
 
 - (void)searchDevices:(FlutterResult)result {
     NSLog(@"🔍 searchDevices() 시작");
-    
+
     _scanCallback = result;
     [_discoveredPrinters removeAllObjects];
-    
+
     [_printerSDK scanPrintersWithCompletion:^(Printer* printer) {
         if (printer) {
             NSString* name = printer.name ?: @"Unknown Printer";
             NSString* address = printer.UUIDString ?: @"";
-            
+
             // Printer 객체를 Dictionary에 저장
             [_discoveredPrinters setObject:printer forKey:address];
-            
+
             NSLog(@"🔍 프린터 발견: %@ (%@)", name, address);
         }
     }];
-    
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [_printerSDK stopScanPrinters];
-        
+
         NSMutableArray* deviceList = [NSMutableArray array];
         for (NSString* address in _discoveredPrinters) {
             Printer* printer = _discoveredPrinters[address];
@@ -152,7 +150,7 @@
                 @"address": printer.UUIDString ?: @""
             }];
         }
-        
+
         NSLog(@"✅ 검색 완료: %lu개 기기", (unsigned long)deviceList.count);
         _scanCallback(deviceList);
         _scanCallback = nil;
@@ -161,59 +159,97 @@
 
 - (void)connectDevice:(NSString*)address result:(FlutterResult)result {
     NSLog(@"🔌 프린터 연결 시작: %@", address);
-    
+
     Printer* printer = [_discoveredPrinters objectForKey:address];
     if (!printer) {
         NSLog(@"❌ 프린터를 찾을 수 없음");
         result([FlutterError errorWithCode:@"NOT_FOUND" message:@"프린터를 찾을 수 없습니다" details:nil]);
         return;
     }
-    
-    self.connectedPrinter = printer;
-    [_printerSDK connectBT:printer];
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+
+    // 프린터 타입 자동 감지
+    NSString* deviceName = printer.name ?: @"Unknown";
+    NSString* printerType = [BluetoothDeviceSearcher detectPrinterType:deviceName];
+
+    NSLog(@"🔍 감지된 프린터 타입: %@ (기기명: %@)", printerType, deviceName);
+
+    // 드라이버 선택
+    id<PrinterDriver> driver;
+    if ([printerType isEqualToString:@"star_micronics"]) {
+        NSLog(@"📌 StarIoDriver 선택");
+        driver = [[StarIoDriver alloc] init];
+    } else {
+        NSLog(@"📌 EscPosDriver 선택");
+        driver = [[EscPosDriver alloc] init];
+    }
+
+    // 드라이버로 연결
+    NSError* error = nil;
+    BOOL connected = [driver connectWithAddress:address error:&error];
+
+    if (connected) {
+        self.currentDriver = driver;
+        self.connectedPrinter = printer;
+
+        // 연결 모니터링 시작
+        __weak typeof(self) weakSelf = self;
+        [driver startConnectionMonitoringWithCallback:^(NSString* status) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (strongSelf) {
+                [strongSelf sendConnectionStatus:status message:@"" reason:@""];
+            }
+        }];
+
         NSLog(@"✅ 프린터 연결 완료");
         [self sendConnectionStatus:@"connected" message:@"" reason:@""];
         result(@YES);
-    });
+    } else {
+        NSLog(@"❌ 프린터 연결 실패: %@", error.localizedDescription);
+        result([FlutterError errorWithCode:@"CONNECTION_FAILED"
+                                   message:error.localizedDescription ?: @"프린터 연결 실패"
+                                   details:nil]);
+    }
 }
 
 - (void)disconnect:(FlutterResult)result {
     NSLog(@"🔌 프린터 연결 해제");
-    
-    [_printerSDK disconnect];
+
+    if (self.currentDriver) {
+        [self.currentDriver disconnect];
+        [self.currentDriver cleanup];
+        self.currentDriver = nil;
+    }
+
     self.connectedPrinter = nil;
-    
+
     [self sendConnectionStatus:@"disconnected" message:@"" reason:[DisconnectReasonHelper codeFromReason:DisconnectReasonManualDisconnect]];
-    
+
     result(@YES);
 }
 
 #pragma mark - Printing
 
 - (void)printSingleOrder:(NSDictionary*)args result:(FlutterResult)result {
-    if (!_printerSDK) {
+    if (!self.currentDriver) {
         result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
         return;
     }
-    
+
     NSLog(@"📄 단일 주문 영수증 출력 시작");
-    
+
     NSError* error = nil;
-    BOOL success = [SingleOrderDirectPrinter printOrder:args[@"orderData"]
-                                              storeName:args[@"storeName"]
-                                           storeAddress:args[@"storeAddress"]
-                                            phoneNumber:args[@"phoneNumber"]
-                                         businessNumber:args[@"businessNumber"]
-                                        thankYouMessage:args[@"thankYouMessage"]
-                                               language:args[@"language"] ?: @"kor"
-                                               currency:args[@"currency"] ?: @"KRW"
-                                            tableNumber:args[@"tableNumber"]
-                                         showStoreLabel:[args[@"showStoreLabel"] boolValue]
-                                             printerSDK:_printerSDK
-                                                  error:&error];
-    
+    BOOL success = [self.currentDriver printSingleOrderWithData:args[@"orderData"]
+                                                       storeName:args[@"storeName"]
+                                                     tableNumber:args[@"tableNumber"]
+                                                    storeAddress:args[@"storeAddress"]
+                                                     phoneNumber:args[@"phoneNumber"]
+                                                  businessNumber:args[@"businessNumber"]
+                                                thankYouMessage:args[@"thankYouMessage"]
+                                                        language:args[@"language"] ?: @"kor"
+                                                        currency:args[@"currency"] ?: @"KRW"
+                                                  showStoreLabel:[args[@"showStoreLabel"] boolValue]
+                                                           error:&error];
+
     if (success) {
         NSLog(@"✅ 출력 완료");
         result(@YES);
@@ -224,7 +260,7 @@
 }
 
 - (void)printTotalOrder:(NSDictionary*)args result:(FlutterResult)result {
-    if (!_printerSDK) {
+    if (!self.currentDriver) {
         result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
         return;
     }
@@ -232,43 +268,15 @@
     NSLog(@"📄 전체 주문 영수증 출력 시작");
 
     NSError* error = nil;
-    BOOL success = [MultipleOrderDirectPrinter printOrder:args[@"orderData"]
-                                                storeName:args[@"storeName"]
-                                             storeAddress:args[@"storeAddress"]
-                                              phoneNumber:args[@"phoneNumber"]
-                                           businessNumber:args[@"businessNumber"]
-                                          thankYouMessage:args[@"thankYouMessage"]
-                                                 language:args[@"language"] ?: @"kor"
-                                                 currency:args[@"currency"] ?: @"KRW"
-                                              tableNumber:args[@"tableNumber"]
-                                               printerSDK:_printerSDK
-                                                    error:&error];
-
-    if (success) {
-        NSLog(@"✅ 출력 완료");
-        result(@YES);
-    } else {
-        NSLog(@"❌ 출력 실패: %@", error.localizedDescription);
-        result([FlutterError errorWithCode:@"PRINT_FAIL" message:error.localizedDescription details:nil]);
-    }
-}
-
-- (void)printOrderFromSocket:(NSDictionary*)args result:(FlutterResult)result {
-    if (!_printerSDK) {
-        result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
-        return;
-    }
-
-    NSLog(@"📄 주문 알림 출력 시작");
-
-    NSString* language = args[@"language"] ?: @"kor";
-    NSString* currency = args[@"currency"] ?: @"KRW";
-
-    NSError* error = nil;
-    BOOL success = [OrderNotificationPrinter printNotification:args[@"orderData"]
-                                                       language:language
-                                                       currency:currency
-                                                     printerSDK:_printerSDK
+    BOOL success = [self.currentDriver printTotalOrderWithData:args[@"orderData"]
+                                                      storeName:args[@"storeName"]
+                                                    tableNumber:args[@"tableNumber"]
+                                                   storeAddress:args[@"storeAddress"]
+                                                    phoneNumber:args[@"phoneNumber"]
+                                                 businessNumber:args[@"businessNumber"]
+                                               thankYouMessage:args[@"thankYouMessage"]
+                                                       language:args[@"language"] ?: @"kor"
+                                                       currency:args[@"currency"] ?: @"KRW"
                                                           error:&error];
 
     if (success) {
@@ -280,8 +288,34 @@
     }
 }
 
+- (void)printOrderFromSocket:(NSDictionary*)args result:(FlutterResult)result {
+    if (!self.currentDriver) {
+        result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
+        return;
+    }
+
+    NSLog(@"📄 주문 알림 출력 시작");
+
+    NSString* language = args[@"language"] ?: @"kor";
+    NSString* currency = args[@"currency"] ?: @"KRW";
+
+    NSError* error = nil;
+    BOOL success = [self.currentDriver printOrderFromSocketWithData:args[@"orderData"]
+                                                            language:language
+                                                            currency:currency
+                                                               error:&error];
+
+    if (success) {
+        NSLog(@"✅ 출력 완료");
+        result(@YES);
+    } else {
+        NSLog(@"❌ 출력 실패: %@", error.localizedDescription);
+        result([FlutterError errorWithCode:@"PRINT_FAIL" message:error.localizedDescription details:nil]);
+    }
+}
+
 - (void)printText:(NSDictionary*)args result:(FlutterResult)result {
-    if (!_printerSDK) {
+    if (!self.currentDriver) {
         result([FlutterError errorWithCode:@"NOT_CONNECTED" message:@"프린터가 연결되지 않았습니다" details:nil]);
         return;
     }
@@ -294,31 +328,23 @@
 
     NSLog(@"📄 텍스트 출력: %@", text);
 
-    @try {
-        // 프린터 초기화
-        NSData* initCommand = [PrinterCommands POS_Set_PrtInit];
-        [_printerSDK sendHex:[PrinterUtilities dataToHexString:initCommand]];
+    CGFloat fontSize = [args[@"fontSize"] floatValue] ?: 40.0f;
+    BOOL isBold = [args[@"isBold"] boolValue];
+    NSString* align = args[@"align"] ?: @"left";
 
-        // 텍스트를 이미지로 렌더링하여 출력
-        UIImage* image = [KoreanTextRenderer createTextImage:text
-                                                     textSize:40.0f
-                                                       isBold:NO
-                                                        align:TextAlignLeft];
-        NSData* bitmap = [KoreanTextRenderer convertToBitmap:image];
-        NSString* hexString = [PrinterUtilities dataToHexString:bitmap];
-        [_printerSDK sendHex:hexString];
+    NSError* error = nil;
+    BOOL success = [self.currentDriver printTextWithText:text
+                                                 fontSize:fontSize
+                                                   isBold:isBold
+                                                    align:align
+                                                    error:&error];
 
-        // 줄바꿈 및 용지 자르기
-        NSData* feedCommand = [PrinterCommands POS_Set_PrtAndFeedPaper:100];
-        [_printerSDK sendHex:[PrinterUtilities dataToHexString:feedCommand]];
-
-        NSData* cutCommand = [EscPosConstants GS_V_n];
-        [_printerSDK sendHex:[PrinterUtilities dataToHexString:cutCommand]];
-
+    if (success) {
+        NSLog(@"✅ 텍스트 출력 완료");
         result(@YES);
-    } @catch (NSException* exception) {
-        NSLog(@"❌ 텍스트 출력 실패: %@", exception.reason);
-        result([FlutterError errorWithCode:@"PRINT_FAIL" message:exception.reason details:nil]);
+    } else {
+        NSLog(@"❌ 텍스트 출력 실패: %@", error.localizedDescription);
+        result([FlutterError errorWithCode:@"PRINT_FAIL" message:error.localizedDescription details:nil]);
     }
 }
 

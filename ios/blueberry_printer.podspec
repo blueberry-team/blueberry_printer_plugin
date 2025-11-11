@@ -16,7 +16,8 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/BlueberryPrinterPlugin.h'
   s.dependency 'Flutter'
-  s.platform = :ios, '13.0'  # StarIO10 requires iOS 13.0+
+  s.dependency 'StarIO10', '~> 1.6.0'  # StarXpand SDK for Star Micronics printers
+  s.platform = :ios, '14.0'  # StarIO10 requires iOS 14.0+
 
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 
