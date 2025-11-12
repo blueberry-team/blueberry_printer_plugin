@@ -383,11 +383,30 @@
                                            ?: selectedItem[@"menuOptionItemDetailQuantity"];
                 NSInteger optionQuantity = [optionQuantityNum integerValue];
 
-                // 옵션 이름만 표시 (가격 제거, Android와 동일)
-                if (optionQuantity > 1) {
-                    [optionLines appendFormat:@"  %@ %@ x%ld\n", optionPrefix, optionName, (long)optionQuantity];
+                // 옵션 가격 가져오기
+                NSNumber* optionPriceNum = selectedItem[@"itemPrice"]
+                                        ?: selectedItem[@"menuOptionItemDetailPrice"];
+                double optionPrice = [optionPriceNum doubleValue];
+
+                // 옵션 이름과 가격 표시
+                if (optionPrice > 0) {
+                    double totalOptionPrice = optionPrice * optionQuantity;
+                    if (optionQuantity > 1) {
+                        [optionLines appendFormat:@"  %@ %@ x%ld (+%@)\n",
+                                     optionPrefix, optionName, (long)optionQuantity,
+                                     [self formatPrice:totalOptionPrice currency:currency]];
+                    } else {
+                        [optionLines appendFormat:@"  %@ %@ (+%@)\n",
+                                     optionPrefix, optionName,
+                                     [self formatPrice:optionPrice currency:currency]];
+                    }
                 } else {
-                    [optionLines appendFormat:@"  %@ %@\n", optionPrefix, optionName];
+                    // 가격이 0인 경우 기존과 동일하게 표시
+                    if (optionQuantity > 1) {
+                        [optionLines appendFormat:@"  %@ %@ x%ld\n", optionPrefix, optionName, (long)optionQuantity];
+                    } else {
+                        [optionLines appendFormat:@"  %@ %@\n", optionPrefix, optionName];
+                    }
                 }
             }
         }

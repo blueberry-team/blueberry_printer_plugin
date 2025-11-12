@@ -22,6 +22,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (instancetype)init;
 
+/**
+ * 프린터 객체 미리 설정 (연결 시 스캔 생략)
+ * @param printer 검색된 Printer 객체
+ */
+- (void)setPrinter:(Printer*)printer;
+
 @end
 
 NS_ASSUME_NONNULL_END

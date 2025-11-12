@@ -8,7 +8,7 @@
 #import "BlueberryPrinterPlugin.h"
 #import "drivers/PrinterDriver.h"
 #import "drivers/EscPosDriver.h"
-#import "drivers/StarIoDriver.h"
+// #import "drivers/StarIoDriver.h"  // TODO: Add after StarIO10 integration
 #import "bluetooth_search/BluetoothDeviceSearcher.h"
 #import "common/DisconnectReason.h"
 
@@ -176,11 +176,18 @@
     // 드라이버 선택
     id<PrinterDriver> driver;
     if ([printerType isEqualToString:@"star_micronics"]) {
-        NSLog(@"📌 StarIoDriver 선택");
-        driver = [[StarIoDriver alloc] init];
+        NSLog(@"⚠️ Star 프린터는 현재 iOS에서 지원되지 않습니다");
+        result(@{
+            @"status": @"error",
+            @"message": @"Star Micronics 프린터는 현재 iOS에서 지원되지 않습니다. ESC/POS 프린터를 사용해주세요."
+        });
+        return;
     } else {
         NSLog(@"📌 EscPosDriver 선택");
-        driver = [[EscPosDriver alloc] init];
+        EscPosDriver* escDriver = [[EscPosDriver alloc] init];
+        // 검색된 프린터 객체를 드라이버에 미리 설정
+        [escDriver setPrinter:printer];
+        driver = escDriver;
     }
 
     // 드라이버로 연결

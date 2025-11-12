@@ -46,6 +46,15 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+#pragma mark - Public Methods
+
+- (void)setPrinter:(Printer*)printer {
+    if (printer && printer.UUIDString) {
+        [self.discoveredPrinters setObject:printer forKey:printer.UUIDString];
+        NSLog(@"✅ EscPosDriver에 프린터 설정됨: %@ (%@)", printer.name, printer.UUIDString);
+    }
+}
+
 #pragma mark - PrinterDriver Protocol
 
 - (PrinterType)getType {
