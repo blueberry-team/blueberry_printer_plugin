@@ -20,6 +20,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Star Micronics 프린터 드라이버
@@ -583,7 +586,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
     }
 
     /**
-     * 주문 알림 영수증 빌드 (간략 버전)
+     * 주문 알림 영수증 빌드
      */
     private fun buildOrderNotificationReceipt(
         orderData: Map<String, Any>,
@@ -592,13 +595,119 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
     ): PrinterBuilder {
         val printerBuilder = PrinterBuilder()
 
+        // 다국어 텍스트
+        fun getLocalizedText(key: String): String {
+            return when (language) {
+                "eng" -> when (key) {
+                    "table" -> "Table"
+                    "order_create" -> "Order  Added"
+                    "order_update" -> "Order  Updated"
+                    "order_cancelled" -> "Order  Cancelled"
+                    "option" -> "Option/"
+                    else -> key
+                }
+                "jpn" -> when (key) {
+                    "table" -> "テーブル"
+                    "order_create" -> "注文  追加"
+                    "order_update" -> "注文  変更"
+                    "order_cancelled" -> "注文  取消"
+                    "option" -> "オプション/"
+                    else -> key
+                }
+                else -> when (key) { // "kor"
+                    "table" -> "테이블"
+                    "order_create" -> "주문  추가"
+                    "order_update" -> "주문  변경"
+                    "order_cancelled" -> "주문  취소"
+                    "option" -> "옵션/"
+                    else -> key
+                }
+            }
+        }
+
+        // 주문 정보 추출
+        val orderType = orderData["orderType"] as? String ?: "CREATE"
+        val tableNumber = orderData["tableNumber"] as? Int ?: 0
+        val items = orderData["items"] as? List<Map<String, Any>> ?: emptyList()
+
+        // 날짜/시간 출력
+        val dateFormat = when (language) {
+            "jpn" -> SimpleDateFormat("M月d日 (E) HH:mm", Locale.JAPANESE)
+            "eng" -> SimpleDateFormat("MMM d (E) HH:mm", Locale.ENGLISH)
+            else -> SimpleDateFormat("M월 d일 (E) HH:mm", Locale.KOREAN)
+        }
+        val dateString = dateFormat.format(Date())
+
+        printerBuilder
+            .styleAlignment(Alignment.Left)
+            .actionPrintText("$dateString\n")
+            .actionFeedLine(1)
+
+        // 테이블 번호 (박스)
         printerBuilder
             .styleAlignment(Alignment.Center)
-            .styleMagnification(MagnificationParameter(2, 2))
+            .actionPrintText("┌──────────────┐\n")
             .styleBold(true)
-            .actionPrintText("NEW ORDER\n")
-            .styleBold(false)
+            .styleMagnification(MagnificationParameter(2, 2))
+            .actionPrintText("│ ${getLocalizedText("table")} $tableNumber │\n")
             .styleMagnification(MagnificationParameter(1, 1))
+            .styleBold(false)
+            .actionPrintText("└──────────────┘\n")
+            .actionFeedLine(1)
+
+        // 주문 타입
+        val orderTypeText = when (orderType) {
+            "CREATE" -> getLocalizedText("order_create")
+            "UPDATE" -> getLocalizedText("order_update")
+            "CANCELLED" -> getLocalizedText("order_cancelled")
+            else -> orderType
+        }
+
+        printerBuilder
+            .styleAlignment(Alignment.Left)
+            .styleBold(true)
+            .styleMagnification(MagnificationParameter(2, 2))
+            .actionPrintText("$orderTypeText\n")
+            .styleMagnification(MagnificationParameter(1, 1))
+            .styleBold(false)
+            .actionFeedLine(1)
+
+        // 구분선
+        printerBuilder.actionPrintText("-".repeat(48) + "\n")
+
+        // 메뉴 아이템 출력
+        for (item in items) {
+            val menuName = item["menuName"] as? String ?: ""
+            val quantity = item["quantity"] as? Int ?: 1
+            val itemOptions = item["itemOptions"] as? List<Map<String, Any>> ?: emptyList()
+
+            // 메뉴명 + 수량
+            printerBuilder
+                .styleBold(true)
+                .actionPrintText("$menuName x $quantity\n")
+                .styleBold(false)
+
+            // 옵션 출력
+            for (option in itemOptions) {
+                val optionName = option["name"] as? String ?: ""
+                val optionDetails = option["optionDetails"] as? List<Map<String, Any>> ?: emptyList()
+
+                val detailNames = optionDetails.mapNotNull { detail ->
+                    val detailName = detail["name"] as? String
+                    val detailQuantity = detail["quantity"] as? Int ?: 1
+                    if (detailQuantity > 1) "$detailName x$detailQuantity" else detailName
+                }.joinToString(", ")
+
+                if (detailNames.isNotEmpty()) {
+                    printerBuilder.actionPrintText("${getLocalizedText("option")} $optionName : $detailNames\n")
+                }
+            }
+
+            printerBuilder.actionFeedLine(1)
+        }
+
+        // 용지 자르기
+        printerBuilder
             .actionFeedLine(2)
             .actionCut(CutType.Partial)
 

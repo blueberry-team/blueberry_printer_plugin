@@ -8,9 +8,11 @@
 #import "BlueberryPrinterPlugin.h"
 #import "drivers/PrinterDriver.h"
 #import "drivers/EscPosDriver.h"
-// #import "drivers/StarIoDriver.h"  // TODO: Add after StarIO10 integration
 #import "bluetooth_search/BluetoothDeviceSearcher.h"
 #import "common/DisconnectReason.h"
+
+// StarIoDriver는 Swift로 구현되어 런타임에 로드
+@class StarIoDriver;
 
 @interface BlueberryPrinterPlugin () <FlutterStreamHandler>
 {
@@ -122,100 +124,152 @@
 #pragma mark - Device Management
 
 - (void)searchDevices:(FlutterResult)result {
-    NSLog(@"🔍 searchDevices() 시작");
+    NSLog(@"🔍 Flutter 메서드 호출: searchDevices");
 
     _scanCallback = result;
     [_discoveredPrinters removeAllObjects];
 
-    [_printerSDK scanPrintersWithCompletion:^(Printer* printer) {
-        if (printer) {
-            NSString* name = printer.name ?: @"Unknown Printer";
-            NSString* address = printer.UUIDString ?: @"";
-
-            // Printer 객체를 Dictionary에 저장
-            [_discoveredPrinters setObject:printer forKey:address];
-
-            NSLog(@"🔍 프린터 발견: %@ (%@)", name, address);
-        }
-    }];
-
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [_printerSDK stopScanPrinters];
-
-        NSMutableArray* deviceList = [NSMutableArray array];
-        for (NSString* address in _discoveredPrinters) {
-            Printer* printer = _discoveredPrinters[address];
-            [deviceList addObject:@{
-                @"name": printer.name ?: @"Unknown",
-                @"address": printer.UUIDString ?: @""
-            }];
+    // BluetoothDeviceSearcher를 사용하여 모든 프린터 검색
+    // (External Accessory + PrinterSDK)
+    [BluetoothDeviceSearcher searchPairedDevices:_printerSDK completion:^(NSArray<NSDictionary *> * _Nullable devices, NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"❌ 프린터 검색 실패: %@", error.localizedDescription);
+            _scanCallback(@[]);
+            _scanCallback = nil;
+            return;
         }
 
-        NSLog(@"✅ 검색 완료: %lu개 기기", (unsigned long)deviceList.count);
-        _scanCallback(deviceList);
+        // 검색된 기기들을 _discoveredPrinters에 저장
+        // External Accessory 기기는 Printer 객체가 없으므로 deviceInfo를 저장
+        for (NSDictionary* deviceInfo in devices) {
+            NSString* address = deviceInfo[@"address"];
+            if (address && address.length > 0) {
+                // deviceInfo를 저장 (나중에 연결 시 타입 구분)
+                [_discoveredPrinters setObject:deviceInfo forKey:address];
+            }
+        }
+
+        NSLog(@"✅ 검색 완료: %lu개 기기", (unsigned long)devices.count);
+        _scanCallback(devices);
         _scanCallback = nil;
-    });
+    }];
 }
 
 - (void)connectDevice:(NSString*)address result:(FlutterResult)result {
     NSLog(@"🔌 프린터 연결 시작: %@", address);
 
-    Printer* printer = [_discoveredPrinters objectForKey:address];
-    if (!printer) {
+    NSDictionary* deviceInfo = [_discoveredPrinters objectForKey:address];
+    if (!deviceInfo) {
         NSLog(@"❌ 프린터를 찾을 수 없음");
         result([FlutterError errorWithCode:@"NOT_FOUND" message:@"프린터를 찾을 수 없습니다" details:nil]);
         return;
     }
 
-    // 프린터 타입 자동 감지
-    NSString* deviceName = printer.name ?: @"Unknown";
+    NSString* deviceName = deviceInfo[@"name"] ?: @"Unknown";
     NSString* printerType = [BluetoothDeviceSearcher detectPrinterType:deviceName];
 
     NSLog(@"🔍 감지된 프린터 타입: %@ (기기명: %@)", printerType, deviceName);
 
-    // 드라이버 선택
-    id<PrinterDriver> driver;
+    // Star 프린터는 StarIoDriver 사용
     if ([printerType isEqualToString:@"star_micronics"]) {
-        NSLog(@"⚠️ Star 프린터는 현재 iOS에서 지원되지 않습니다");
-        result(@{
-            @"status": @"error",
-            @"message": @"Star Micronics 프린터는 현재 iOS에서 지원되지 않습니다. ESC/POS 프린터를 사용해주세요."
-        });
+        NSLog(@"📌 StarIoDriver 선택 (Star Micronics 프린터)");
+
+        // Swift로 구현된 StarIoDriver를 런타임에 로드
+        Class starDriverClass = NSClassFromString(@"StarIoDriver");
+        if (!starDriverClass) {
+            NSLog(@"❌ StarIoDriver 클래스를 찾을 수 없습니다");
+            result([FlutterError errorWithCode:@"CONNECTION_FAILED"
+                                       message:@"StarIoDriver 클래스를 찾을 수 없습니다"
+                                       details:nil]);
+            return;
+        }
+
+        id<PrinterDriver> starDriver = [[starDriverClass alloc] init];
+        NSLog(@"✅ StarIoDriver 인스턴스 생성 완료");
+
+        // 드라이버로 연결 (StarDeviceDiscovery에서 받은 identifier 사용)
+        NSError* error = nil;
+        NSLog(@"📌 StarIO10 identifier로 연결 시도: %@", address);
+        BOOL connected = [starDriver connectWithAddress:address error:&error];
+
+        if (connected) {
+            self.currentDriver = starDriver;
+            self.connectedPrinter = nil; // Star 프린터는 Printer 객체 없음
+
+            // 연결 모니터링 시작
+            __weak typeof(self) weakSelf = self;
+            [starDriver startConnectionMonitoringWithCallback:^(NSString* status) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf sendConnectionStatus:status message:@"" reason:@""];
+                }
+            }];
+
+            NSLog(@"✅ Star 프린터 연결 완료");
+            [self sendConnectionStatus:@"connected" message:@"" reason:@""];
+            result(@YES);
+        } else {
+            NSLog(@"❌ Star 프린터 연결 실패: %@", error.localizedDescription);
+            result([FlutterError errorWithCode:@"CONNECTION_FAILED"
+                                       message:error.localizedDescription ?: @"Star 프린터 연결 실패"
+                                       details:nil]);
+        }
         return;
-    } else {
+    }
+
+    // ESC/POS 프린터는 PrinterSDK로 스캔해서 연결
+    __block Printer* foundPrinter = nil;
+
+    [_printerSDK scanPrintersWithCompletion:^(Printer* printer) {
+        if (printer && [printer.UUIDString isEqualToString:address]) {
+            foundPrinter = printer;
+        }
+    }];
+
+    // 1초 대기 후 연결 시도
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [_printerSDK stopScanPrinters];
+
+        if (!foundPrinter) {
+            NSLog(@"❌ 프린터를 찾을 수 없음");
+            result([FlutterError errorWithCode:@"NOT_FOUND"
+                                       message:@"프린터를 찾을 수 없습니다"
+                                       details:nil]);
+            return;
+        }
+
+        // ESC/POS 드라이버 선택
         NSLog(@"📌 EscPosDriver 선택");
         EscPosDriver* escDriver = [[EscPosDriver alloc] init];
-        // 검색된 프린터 객체를 드라이버에 미리 설정
-        [escDriver setPrinter:printer];
-        driver = escDriver;
-    }
+        [escDriver setPrinter:foundPrinter];
 
-    // 드라이버로 연결
-    NSError* error = nil;
-    BOOL connected = [driver connectWithAddress:address error:&error];
+        // 드라이버로 연결
+        NSError* error = nil;
+        BOOL connected = [escDriver connectWithAddress:address error:&error];
 
-    if (connected) {
-        self.currentDriver = driver;
-        self.connectedPrinter = printer;
+        if (connected) {
+            self.currentDriver = escDriver;
+            self.connectedPrinter = foundPrinter;
 
-        // 연결 모니터링 시작
-        __weak typeof(self) weakSelf = self;
-        [driver startConnectionMonitoringWithCallback:^(NSString* status) {
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            if (strongSelf) {
-                [strongSelf sendConnectionStatus:status message:@"" reason:@""];
-            }
-        }];
+            // 연결 모니터링 시작
+            __weak typeof(self) weakSelf = self;
+            [escDriver startConnectionMonitoringWithCallback:^(NSString* status) {
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                if (strongSelf) {
+                    [strongSelf sendConnectionStatus:status message:@"" reason:@""];
+                }
+            }];
 
-        NSLog(@"✅ 프린터 연결 완료");
-        [self sendConnectionStatus:@"connected" message:@"" reason:@""];
-        result(@YES);
-    } else {
-        NSLog(@"❌ 프린터 연결 실패: %@", error.localizedDescription);
-        result([FlutterError errorWithCode:@"CONNECTION_FAILED"
-                                   message:error.localizedDescription ?: @"프린터 연결 실패"
-                                   details:nil]);
-    }
+            NSLog(@"✅ 프린터 연결 완료");
+            [self sendConnectionStatus:@"connected" message:@"" reason:@""];
+            result(@YES);
+        } else {
+            NSLog(@"❌ 프린터 연결 실패: %@", error.localizedDescription);
+            result([FlutterError errorWithCode:@"CONNECTION_FAILED"
+                                       message:error.localizedDescription ?: @"프린터 연결 실패"
+                                       details:nil]);
+        }
+    });
 }
 
 - (void)disconnect:(FlutterResult)result {
@@ -274,14 +328,19 @@
 
     NSLog(@"📄 전체 주문 영수증 출력 시작");
 
+    // NSNull을 nil로 변환하는 헬퍼 블록
+    id (^nilIfNull)(id) = ^id(id value) {
+        return (value == [NSNull null]) ? nil : value;
+    };
+
     NSError* error = nil;
     BOOL success = [self.currentDriver printTotalOrderWithData:args[@"orderData"]
                                                       storeName:args[@"storeName"]
-                                                    tableNumber:args[@"tableNumber"]
-                                                   storeAddress:args[@"storeAddress"]
-                                                    phoneNumber:args[@"phoneNumber"]
-                                                 businessNumber:args[@"businessNumber"]
-                                               thankYouMessage:args[@"thankYouMessage"]
+                                                    tableNumber:nilIfNull(args[@"tableNumber"])
+                                                   storeAddress:nilIfNull(args[@"storeAddress"])
+                                                    phoneNumber:nilIfNull(args[@"phoneNumber"])
+                                                 businessNumber:nilIfNull(args[@"businessNumber"])
+                                               thankYouMessage:nilIfNull(args[@"thankYouMessage"])
                                                        language:args[@"language"] ?: @"kor"
                                                        currency:args[@"currency"] ?: @"KRW"
                                                           error:&error];

@@ -57,5 +57,12 @@
 	<string>이 앱은 Bluetooth 프린터를 검색하기 위해 위치 정보를 사용합니다.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>이 앱은 Bluetooth 프린터를 검색하기 위해 위치 정보를 사용합니다.</string>
+
+	<!-- External Accessory 프로토콜 (Star Micronics 프린터) -->
+	<key>UISupportedExternalAccessoryProtocols</key>
+	<array>
+		<string>jp.star-m.starpro</string>
+		<string>com.starmicronics.starpro</string>
+	</array>
 </dict>
 </plist>

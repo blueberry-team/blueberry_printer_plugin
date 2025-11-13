@@ -14,26 +14,27 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
-  s.exclude_files = 'Classes/drivers/StarIoDriver.{h,m}'
   s.public_header_files = 'Classes/BlueberryPrinterPlugin.h'
   s.dependency 'Flutter'
-  # NOTE: StarIO10 is not available via CocoaPods - will integrate later via xcframework
-  # s.dependency 'StarIO10', '~> 1.6.0'
-  s.platform = :ios, '13.0'
+  s.platform = :ios, '14.0'
 
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 
-    'DEFINES_MODULE' => 'YES', 
-    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386'
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386',
+    'CLANG_ENABLE_MODULES' => 'YES'
   }
   s.swift_version = '5.0'
-  
+
   # 필요한 프레임워크 추가
-  s.frameworks = 'CoreBluetooth', 'CoreGraphics', 'UIKit'
+  s.frameworks = 'CoreBluetooth', 'CoreGraphics', 'UIKit', 'ExternalAccessory'
   
   # PrinterSDK 정적 라이브러리 추가
   s.vendored_libraries = 'Classes/PrinterSDK/libPrinterSDK.a'
-  
+
+  # StarIO10 xcframework 추가
+  s.vendored_frameworks = 'StarIO10.xcframework'
+
   # 개인정보 보호 매니페스트 (iOS 17+)
   # s.resource_bundles = {
   #   'blueberry_printer_privacy' => ['Resources/PrivacyInfo.xcprivacy']

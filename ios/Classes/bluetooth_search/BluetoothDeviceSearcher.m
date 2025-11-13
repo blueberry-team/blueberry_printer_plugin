@@ -7,6 +7,7 @@
 
 #import "BluetoothDeviceSearcher.h"
 #import <CoreBluetooth/CoreBluetooth.h>
+#import <ExternalAccessory/ExternalAccessory.h>
 
 @implementation BluetoothDeviceSearcher
 
@@ -23,12 +24,37 @@
     }
 
     NSMutableArray<NSDictionary*>* discoveredDevices = [NSMutableArray array];
+    NSMutableSet<NSString*>* foundAddresses = [NSMutableSet set];
 
-    // PrinterSDK를 사용하여 프린터 스캔
-    [printerSDK scanPrintersWithCompletion:^(Printer* printer) {
-        if (printer) {
-            NSString* name = printer.name ?: @"Unknown Printer";
-            NSString* address = printer.UUIDString ?: @"";
+    // 1. External Accessory로 페어링된 기기 먼저 찾기 (Star 프린터 포함)
+    EAAccessoryManager* accessoryManager = [EAAccessoryManager sharedAccessoryManager];
+    NSArray<EAAccessory*>* connectedAccessories = accessoryManager.connectedAccessories;
+
+    NSLog(@"🔍 External Accessory 기기 수: %lu", (unsigned long)connectedAccessories.count);
+
+    for (EAAccessory* accessory in connectedAccessories) {
+        NSString* name = accessory.name ?: @"Unknown Device";
+
+        // serialNumber 확인 (Star 프린터는 이것을 사용)
+        NSString* serialNumber = accessory.serialNumber;
+        NSString* address;
+
+        if (serialNumber && serialNumber.length > 0) {
+            address = serialNumber;
+            NSLog(@"🔍 [EA] %@ - serialNumber 사용: %@", name, serialNumber);
+        } else {
+            address = [NSString stringWithFormat:@"%lu", (unsigned long)accessory.connectionID];
+            NSLog(@"🔍 [EA] %@ - serialNumber 없음, connectionID 사용: %@", name, address);
+        }
+
+        // 프린터로 보이는 기기만 추가
+        NSString* lowerName = [name lowercaseString];
+        if ([lowerName containsString:@"print"] ||
+            [lowerName containsString:@"star"] ||
+            [lowerName containsString:@"mcp"] ||
+            [lowerName containsString:@"mc-print"] ||
+            [lowerName containsString:@"tsp"] ||
+            [lowerName containsString:@"sm-"]) {
 
             NSDictionary* deviceInfo = @{
                 @"name": name,
@@ -36,24 +62,39 @@
             };
 
             [discoveredDevices addObject:deviceInfo];
-            NSLog(@"🔍 프린터 발견: %@ (%@)", name, address);
+            [foundAddresses addObject:address];
+            NSLog(@"🔍 [External Accessory] 프린터 발견: %@ (identifier: %@)", name, address);
+        }
+    }
+
+    // 2. PrinterSDK를 사용하여 ESC/POS 프린터 스캔
+    [printerSDK scanPrintersWithCompletion:^(Printer* printer) {
+        if (printer) {
+            NSString* name = printer.name ?: @"Unknown Printer";
+            NSString* address = printer.UUIDString ?: @"";
+
+            // 중복 제거
+            if (![foundAddresses containsObject:address]) {
+                NSDictionary* deviceInfo = @{
+                    @"name": name,
+                    @"address": address
+                };
+
+                [discoveredDevices addObject:deviceInfo];
+                [foundAddresses addObject:address];
+                NSLog(@"🔍 [PrinterSDK] 프린터 발견: %@ (%@)", name, address);
+            }
         }
     }];
 
     // 스캔 완료 후 약간의 딜레이를 두고 결과 반환 (스캔이 비동기이므로)
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    // 5초로 늘려서 더 많은 프린터 발견 기회 제공
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [printerSDK stopScanPrinters];
 
         if (completion) {
-            if (discoveredDevices.count > 0) {
-                NSLog(@"🔍 검색 완료: %lu개 기기", (unsigned long)discoveredDevices.count);
-                completion(discoveredDevices, nil);
-            } else {
-                NSError* error = [NSError errorWithDomain:@"BluetoothDeviceSearcher"
-                                                     code:1002
-                                                 userInfo:@{NSLocalizedDescriptionKey: @"프린터를 찾을 수 없습니다"}];
-                completion(nil, error);
-            }
+            NSLog(@"🔍 검색 완료: %lu개 기기", (unsigned long)discoveredDevices.count);
+            completion(discoveredDevices, nil);
         }
     });
 }
