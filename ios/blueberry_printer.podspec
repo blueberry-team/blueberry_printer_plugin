@@ -35,6 +35,19 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   # StarIO10 xcframework 추가
   s.vendored_frameworks = 'StarIO10.xcframework'
 
+  # StarIO10 SDK 자동 다운로드 및 설치
+  s.prepare_command = <<-CMD
+    if [ ! -d "StarIO10.xcframework" ]; then
+      echo "Downloading StarIO10 SDK..."
+      curl -L -o StarIO10.zip https://github.com/star-micronics/StarXpand-SDK-iOS/releases/download/1.6.0/StarIO10.xcframework.zip
+      unzip -q StarIO10.zip
+      rm StarIO10.zip
+      echo "StarIO10 SDK downloaded successfully"
+    else
+      echo "StarIO10 SDK already exists"
+    fi
+  CMD
+
   # 개인정보 보호 매니페스트 (iOS 17+)
   # s.resource_bundles = {
   #   'blueberry_printer_privacy' => ['Resources/PrivacyInfo.xcprivacy']
