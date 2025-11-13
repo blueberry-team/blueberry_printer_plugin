@@ -12,7 +12,19 @@
       "Bash(flutter:*)",
       "Bash(pod install)",
       "Bash(export LANG=en_US.UTF-8)",
-      "Bash(fvm flutter:*)"
+      "Bash(fvm flutter:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(cat:*)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)",
+      "Bash(git add:*)",
+      "Bash(git push)",
+      "Bash(pod search StarIO10)",
+      "Bash(/bin/bash -c \"export LANG=en_US.UTF-8 && pod install\")",
+      "Bash(git commit:*)",
+      "Bash(/bin/bash -c \"export LANG=en_US.UTF-8 && pod install --verbose\")",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

@@ -32,14 +32,11 @@ A Flutter plugin that enables Bluetooth printer connection and receipt printing 
   # PrinterSDK 정적 라이브러리 추가
   s.vendored_libraries = 'Classes/PrinterSDK/libPrinterSDK.a'
 
-  # StarIO10 SDK - Swift Package Manager를 통해 설치
-  # Xcode에서 File > Add Packages 하여 추가 필요
-  # URL: https://github.com/star-micronics/StarXpand-SDK-iOS
-  # 또는 프로젝트 루트에서 실행:
-  #   xcodebuild -resolvePackageDependencies
-
-  # 참고: StarIO10은 Swift Package로 제공되므로
-  # 사용자가 Xcode 프로젝트에서 직접 추가해야 합니다.
+  # StarIO10 SDK
+  # Note: StarIO10.xcframework는 Git에 포함되지 않습니다 (.gitignore)
+  # 로컬 개발 시 ios/install_stario10.sh를 실행하여 다운로드하거나
+  # Swift Package Manager 캐시에서 복사해야 합니다.
+  s.vendored_frameworks = 'StarIO10.xcframework'
 
   # 개인정보 보호 매니페스트 (iOS 17+)
   # s.resource_bundles = {
