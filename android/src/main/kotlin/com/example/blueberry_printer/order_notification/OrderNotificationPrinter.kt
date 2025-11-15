@@ -136,20 +136,8 @@ object OrderNotificationPrinter {
      * 테이블 번호 출력 (박스로 강조, 다국어)
      */
     private fun printTableNumber(outputStream: OutputStream, tableNumber: Int, localizer: Localizer) {
-        // 박스 윗부분
-        val boxTop = "┌──────────────┐"
-        val boxTopImage = KoreanTextRenderer.createTextImage(
-            boxTop,
-            32f,
-            false,
-            KoreanTextRenderer.TextAlign.CENTER
-        )
-        outputStream.write(KoreanTextRenderer.convertToBitmap(boxTopImage))
-        outputStream.flush()
-        feedPaper(outputStream, 1)
-
-        // 테이블 번호 (박스 중간)
-        val tableText = "│  ${localizer.getText("table")} $tableNumber  │"
+        // 테이블 번호
+        val tableText = "${localizer.getText("table")} $tableNumber"
         val tableImage = KoreanTextRenderer.createTextImage(
             tableText,
             42f, // 테이블 번호 (28f * 1.5)
@@ -158,19 +146,6 @@ object OrderNotificationPrinter {
         )
         outputStream.write(KoreanTextRenderer.convertToBitmap(tableImage))
         outputStream.flush()
-        feedPaper(outputStream, 1)
-
-        // 박스 아랫부분
-        val boxBottom = "└──────────────┘"
-        val boxBottomImage = KoreanTextRenderer.createTextImage(
-            boxBottom,
-            32f,
-            false,
-            KoreanTextRenderer.TextAlign.CENTER
-        )
-        outputStream.write(KoreanTextRenderer.convertToBitmap(boxBottomImage))
-        outputStream.flush()
-
         feedPaper(outputStream, 1)
     }
 

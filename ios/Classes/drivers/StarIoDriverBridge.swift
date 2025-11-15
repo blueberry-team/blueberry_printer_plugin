@@ -364,15 +364,13 @@ public class StarIoDriver: NSObject {
         _ = printerBuilder.styleAlignment(.left)
         _ = printerBuilder.actionPrintText(dateString + "\n\n")
 
-        // 테이블 번호 (박스)
+        // 테이블 번호
         _ = printerBuilder.styleAlignment(.center)
-        _ = printerBuilder.actionPrintText("┌──────────────┐\n")
         _ = printerBuilder.styleBold(true)
         _ = printerBuilder.styleMagnification(StarXpandCommand.MagnificationParameter(width: 2, height: 2))
-        _ = printerBuilder.actionPrintText("│ \(getLocalizedText("table", language)) \(tableNumber) │\n")
+        _ = printerBuilder.actionPrintText("\(getLocalizedText("table", language)) \(tableNumber)\n\n")
         _ = printerBuilder.styleMagnification(StarXpandCommand.MagnificationParameter(width: 1, height: 1))
         _ = printerBuilder.styleBold(false)
-        _ = printerBuilder.actionPrintText("└──────────────┘\n\n")
 
         // 주문 타입
         let orderTypeText: String

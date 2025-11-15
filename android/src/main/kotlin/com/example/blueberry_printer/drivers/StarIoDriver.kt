@@ -653,16 +653,14 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
             .styleAlignment(Alignment.Left)
             .actionPrintText("$dateString\n\n")
 
-        // 테이블 번호 (박스)
+        // 테이블 번호
         printerBuilder
             .styleAlignment(Alignment.Center)
-            .actionPrintText("┌──────────────┐\n")
             .styleBold(true)
             .styleMagnification(MagnificationParameter(2, 2))
-            .actionPrintText("│ ${getLocalizedText("table")} $tableNumber │\n")
+            .actionPrintText("${getLocalizedText("table")} $tableNumber\n\n")
             .styleMagnification(MagnificationParameter(1, 1))
             .styleBold(false)
-            .actionPrintText("└──────────────┘\n\n")
 
         // 주문 타입
         val orderTypeText = when (orderType) {
