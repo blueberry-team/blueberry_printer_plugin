@@ -640,8 +640,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
 
         printerBuilder
             .styleAlignment(Alignment.Left)
-            .actionPrintText("$dateString\n")
-            .actionFeedLine(1)
+            .actionPrintText("$dateString\n\n")
 
         // 테이블 번호 (박스)
         printerBuilder
@@ -652,8 +651,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
             .actionPrintText("│ ${getLocalizedText("table")} $tableNumber │\n")
             .styleMagnification(MagnificationParameter(1, 1))
             .styleBold(false)
-            .actionPrintText("└──────────────┘\n")
-            .actionFeedLine(1)
+            .actionPrintText("└──────────────┘\n\n")
 
         // 주문 타입
         val orderTypeText = when (orderType) {
@@ -670,7 +668,6 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
             .actionPrintText("$orderTypeText\n")
             .styleMagnification(MagnificationParameter(1, 1))
             .styleBold(false)
-            .actionFeedLine(1)
 
         // 구분선
         printerBuilder.actionPrintText("-".repeat(48) + "\n")
@@ -702,13 +699,11 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                     printerBuilder.actionPrintText("${getLocalizedText("option")} $optionName : $detailNames\n")
                 }
             }
-
-            printerBuilder.actionFeedLine(1)
         }
 
         // 용지 자르기
         printerBuilder
-            .actionFeedLine(2)
+            .actionFeedLine(3)
             .actionCut(CutType.Partial)
 
         return printerBuilder

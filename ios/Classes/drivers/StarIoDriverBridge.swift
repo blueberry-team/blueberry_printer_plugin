@@ -362,8 +362,7 @@ public class StarIoDriver: NSObject {
         let dateString = dateFormatter.string(from: Date())
 
         _ = printerBuilder.styleAlignment(.left)
-        _ = printerBuilder.actionPrintText(dateString + "\n")
-        _ = printerBuilder.actionFeedLine(1)
+        _ = printerBuilder.actionPrintText(dateString + "\n\n")
 
         // 테이블 번호 (박스)
         _ = printerBuilder.styleAlignment(.center)
@@ -373,8 +372,7 @@ public class StarIoDriver: NSObject {
         _ = printerBuilder.actionPrintText("│ \(getLocalizedText("table", language)) \(tableNumber) │\n")
         _ = printerBuilder.styleMagnification(StarXpandCommand.MagnificationParameter(width: 1, height: 1))
         _ = printerBuilder.styleBold(false)
-        _ = printerBuilder.actionPrintText("└──────────────┘\n")
-        _ = printerBuilder.actionFeedLine(1)
+        _ = printerBuilder.actionPrintText("└──────────────┘\n\n")
 
         // 주문 타입
         let orderTypeText: String
@@ -391,7 +389,6 @@ public class StarIoDriver: NSObject {
         _ = printerBuilder.actionPrintText(orderTypeText + "\n")
         _ = printerBuilder.styleMagnification(StarXpandCommand.MagnificationParameter(width: 1, height: 1))
         _ = printerBuilder.styleBold(false)
-        _ = printerBuilder.actionFeedLine(1)
 
         // 구분선
         _ = printerBuilder.actionPrintText(String(repeating: "-", count: 48) + "\n")
@@ -422,12 +419,10 @@ public class StarIoDriver: NSObject {
                     _ = printerBuilder.actionPrintText("\(getLocalizedText("option", language)) \(optionName) : \(detailNames)\n")
                 }
             }
-
-            _ = printerBuilder.actionFeedLine(1)
         }
 
         // 용지 자르기
-        _ = printerBuilder.actionFeedLine(2)
+        _ = printerBuilder.actionFeedLine(3)
         _ = printerBuilder.actionCut(.partial)
 
         _ = builder.addDocument(StarXpandCommand.DocumentBuilder()
