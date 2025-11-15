@@ -12,6 +12,9 @@ import com.example.blueberry_printer.sample_receipt.SimpleTextPrinter
 import com.example.blueberry_printer.single_order.SingleOrderDirectPrinter
 import io.flutter.plugin.common.EventChannel
 import java.io.OutputStream
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * ESC/POS 프린터 드라이버
@@ -21,14 +24,20 @@ import java.io.OutputStream
 class EscPosDriver : PrinterDriver {
     companion object {
         private const val TAG = "EscPosDriver"
+        private const val CONNECT_TIMEOUT_MS = 10000L // 10초 연결 타임아웃
     }
 
     // 현재 연결된 블루투스 소켓과 출력 스트림
+    @Volatile
     private var currentSocket: BluetoothSocket? = null
+    @Volatile
     private var outputStream: OutputStream? = null
 
     // 연결 상태 모니터링
     private var connectionChecker: RealtimeConnectionChecker? = null
+
+    // 출력 작업 동기화용 락
+    private val printLock = Any()
 
     override fun getType(): PrinterDriver.PrinterType {
         return PrinterDriver.PrinterType.ESC_POS
@@ -42,19 +51,45 @@ class EscPosDriver : PrinterDriver {
             val device = BluetoothDeviceSearcher.findDeviceByAddress(address)
             val bluetoothAdapter = BluetoothDeviceSearcher.getBluetoothAdapter()
 
-            // 소켓 연결
+            // 소켓 연결을 타임아웃과 함께 수행
             val uuid = device.uuids?.firstOrNull()?.uuid
                 ?: java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
             val socket = device.createRfcommSocketToServiceRecord(uuid)
             bluetoothAdapter.cancelDiscovery()
-            socket.connect()
 
-            // 연결 성공 시 소켓과 출력 스트림 저장
-            currentSocket = socket
-            outputStream = socket.outputStream
+            // 타임아웃을 적용하기 위해 별도 스레드에서 연결
+            val executor = Executors.newSingleThreadExecutor()
+            val future = executor.submit<Boolean> {
+                try {
+                    socket.connect()
+                    true
+                } catch (e: Exception) {
+                    Log.e(TAG, "소켓 연결 실패: ${e.message}", e)
+                    false
+                }
+            }
 
-            Log.d(TAG, "ESC/POS 프린터 연결 성공")
-            true
+            try {
+                val connected = future.get(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                if (connected) {
+                    // 연결 성공 시 소켓과 출력 스트림 저장
+                    currentSocket = socket
+                    outputStream = socket.outputStream
+                    Log.d(TAG, "ESC/POS 프린터 연결 성공")
+                    true
+                } else {
+                    socket.close()
+                    Log.e(TAG, "소켓 연결 실패")
+                    false
+                }
+            } catch (e: TimeoutException) {
+                Log.e(TAG, "연결 타임아웃 (${CONNECT_TIMEOUT_MS}ms)")
+                future.cancel(true)
+                socket.close()
+                false
+            } finally {
+                executor.shutdown()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "ESC/POS 프린터 연결 실패: ${e.message}", e)
             false
@@ -65,9 +100,22 @@ class EscPosDriver : PrinterDriver {
         return try {
             Log.d(TAG, "ESC/POS 프린터 연결 해제")
             stopConnectionMonitoring()
-            currentSocket?.close()
-            currentSocket = null
-            outputStream = null
+
+            // 스트림과 소켓을 명시적으로 닫기
+            synchronized(printLock) {
+                try {
+                    outputStream?.close()
+                } catch (e: Exception) {
+                    Log.w(TAG, "OutputStream 닫기 중 오류: ${e.message}")
+                }
+                try {
+                    currentSocket?.close()
+                } catch (e: Exception) {
+                    Log.w(TAG, "Socket 닫기 중 오류: ${e.message}")
+                }
+                currentSocket = null
+                outputStream = null
+            }
             true
         } catch (e: Exception) {
             Log.e(TAG, "ESC/POS 프린터 연결 해제 실패: ${e.message}", e)
@@ -99,10 +147,14 @@ class EscPosDriver : PrinterDriver {
 
         return try {
             Log.d(TAG, "단일 주문 영수증 출력 시작 (ESC/POS)")
-            SingleOrderDirectPrinter.print(
-                stream, orderData, storeName, tableNumber, storeAddress,
-                phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
-            )
+            synchronized(printLock) {
+                SingleOrderDirectPrinter.print(
+                    stream, orderData, storeName, tableNumber, storeAddress,
+                    phoneNumber, businessNumber, thankYouMessage, language, currency, showStoreLabel
+                )
+                stream.flush()
+            }
+            Log.d(TAG, "단일 주문 영수증 출력 완료")
             true
         } catch (e: Exception) {
             Log.e(TAG, "단일 주문 영수증 출력 실패", e)
@@ -129,10 +181,14 @@ class EscPosDriver : PrinterDriver {
 
         return try {
             Log.d(TAG, "전체 주문 영수증 출력 시작 (ESC/POS)")
-            MultipleOrderDirectPrinter.print(
-                stream, orderData, storeName, tableNumber, storeAddress,
-                phoneNumber, businessNumber, thankYouMessage, language, currency
-            )
+            synchronized(printLock) {
+                MultipleOrderDirectPrinter.print(
+                    stream, orderData, storeName, tableNumber, storeAddress,
+                    phoneNumber, businessNumber, thankYouMessage, language, currency
+                )
+                stream.flush()
+            }
+            Log.d(TAG, "전체 주문 영수증 출력 완료")
             true
         } catch (e: Exception) {
             Log.e(TAG, "전체 주문 영수증 출력 실패", e)
@@ -153,7 +209,11 @@ class EscPosDriver : PrinterDriver {
 
         return try {
             Log.d(TAG, "주문 알림 영수증 출력 시작 (ESC/POS)")
-            OrderNotificationPrinter.print(stream, orderData, language, currency)
+            synchronized(printLock) {
+                OrderNotificationPrinter.print(stream, orderData, language, currency)
+                stream.flush()
+            }
+            Log.d(TAG, "주문 알림 영수증 출력 완료")
             true
         } catch (e: Exception) {
             Log.e(TAG, "주문 알림 영수증 출력 실패", e)
@@ -183,7 +243,11 @@ class EscPosDriver : PrinterDriver {
                 else -> KoreanTextRenderer.TextAlign.LEFT
             }
 
-            SimpleTextPrinter.print(stream, text, fontSize, isBold, textAlign)
+            synchronized(printLock) {
+                SimpleTextPrinter.print(stream, text, fontSize, isBold, textAlign)
+                stream.flush()
+            }
+            Log.d(TAG, "텍스트 출력 완료")
             true
         } catch (e: Exception) {
             Log.e(TAG, "텍스트 출력 실패", e)
@@ -204,6 +268,7 @@ class EscPosDriver : PrinterDriver {
         try {
             connectionChecker = RealtimeConnectionChecker(
                 socket = socket,
+                outputStreamLock = printLock, // 출력 스트림 동기화 락 전달
                 heartbeatIntervalMs = 5000, // 5초마다 Heartbeat
                 socketTimeoutMs = 3000, // 3초 타임아웃
                 onConnectionLost = { reason ->

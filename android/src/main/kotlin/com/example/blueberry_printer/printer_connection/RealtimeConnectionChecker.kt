@@ -33,6 +33,7 @@ import kotlin.concurrent.scheduleAtFixedRate
  */
 class RealtimeConnectionChecker(
     private val socket: BluetoothSocket,
+    private val outputStreamLock: Any? = null, // 출력 스트림 동기화용 락 (옵션)
     private val heartbeatIntervalMs: Long = 5000, // 5초마다 Heartbeat
     private val socketTimeoutMs: Int = 3000, // 3초 소켓 타임아웃
     private val onConnectionLost: (DisconnectReason) -> Unit, // DisconnectReason enum을 전달
@@ -123,7 +124,9 @@ class RealtimeConnectionChecker(
 
         try {
             outputStream?.let { out ->
-                synchronized(out) {
+                // 출력 스트림 동기화 (제공된 경우)
+                val lockToUse = outputStreamLock ?: out
+                synchronized(lockToUse) {
                     out.write(STATUS_CHECK_COMMAND)
                     out.flush()
                 }

@@ -14,6 +14,8 @@ import com.example.blueberry_printer.bluetooth_search.BluetoothDeviceSearcher
 import io.flutter.plugin.common.EventChannel
 import android.os.Handler
 import android.os.Looper
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
 
 /** BridgeFlutterPlugin - 리팩토링 버전 (멀티 드라이버 지원) */
 class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.StreamHandler {
@@ -32,6 +34,9 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
 
     // UI 스레드 핸들러
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // 백그라운드 작업용 스레드 풀
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         context = flutterPluginBinding.applicationContext
@@ -83,53 +88,68 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
                     return
                 }
 
-                try {
-                    // 기기 이름으로 프린터 타입 감지
-                    val device = BluetoothDeviceSearcher.findDeviceByAddress(address)
-                    val deviceName = device.name ?: "Unknown"
-                    val printerType = BluetoothDeviceSearcher.detectPrinterType(deviceName)
+                // 백그라운드 스레드에서 연결 작업 수행
+                executorService.execute {
+                    try {
+                        // 기기 이름으로 프린터 타입 감지
+                        val device = BluetoothDeviceSearcher.findDeviceByAddress(address)
+                        val deviceName = device.name ?: "Unknown"
+                        val printerType = BluetoothDeviceSearcher.detectPrinterType(deviceName)
 
-                    Log.i(TAG, "연결 시도: $deviceName ($address) - 타입: $printerType")
+                        Log.i(TAG, "연결 시도: $deviceName ($address) - 타입: $printerType")
 
-                    // 기존 드라이버 정리
-                    currentDriver?.cleanup()
+                        // 기존 드라이버 정리
+                        currentDriver?.cleanup()
 
-                    // 프린터 타입에 따라 적절한 드라이버 선택
-                    val driver: PrinterDriver = when (printerType) {
-                        "star_micronics" -> {
-                            Log.i(TAG, "Star Micronics 드라이버 사용")
-                            StarIoDriver(context)
+                        // 프린터 타입에 따라 적절한 드라이버 선택
+                        val driver: PrinterDriver = when (printerType) {
+                            "star_micronics" -> {
+                                Log.i(TAG, "Star Micronics 드라이버 사용")
+                                StarIoDriver(context)
+                            }
+                            else -> {
+                                Log.i(TAG, "ESC/POS 드라이버 사용")
+                                EscPosDriver()
+                            }
                         }
-                        else -> {
-                            Log.i(TAG, "ESC/POS 드라이버 사용")
-                            EscPosDriver()
+
+                        // 프린터 연결
+                        val connected = driver.connect(address)
+
+                        // 메인 스레드에서 결과 반환
+                        mainHandler.post {
+                            if (connected) {
+                                currentDriver = driver
+                                currentDeviceName = deviceName
+
+                                // 연결 상태 모니터링 시작
+                                startConnectionMonitoring(driver)
+
+                                Log.i(TAG, "프린터 연결 성공: $deviceName (${driver.getType()})")
+                                result.success(true)
+                            } else {
+                                Log.e(TAG, "프린터 연결 실패")
+                                result.error("CONNECT_FAIL", "프린터 연결 실패", null)
+                            }
+                        }
+                    } catch (e: BluetoothDeviceSearcher.BluetoothNotSupportedException) {
+                        mainHandler.post {
+                            result.error("NO_ADAPTER", e.message, null)
+                        }
+                    } catch (e: BluetoothDeviceSearcher.BluetoothNotEnabledException) {
+                        mainHandler.post {
+                            result.error("NOT_ENABLED", e.message, null)
+                        }
+                    } catch (e: BluetoothDeviceSearcher.DeviceNotFoundException) {
+                        mainHandler.post {
+                            result.error("NOT_FOUND", e.message, null)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "연결 중 오류 발생", e)
+                        mainHandler.post {
+                            result.error("CONNECT_FAIL", "연결 실패: ${e.message}", null)
                         }
                     }
-
-                    // 프린터 연결
-                    val connected = driver.connect(address)
-                    if (connected) {
-                        currentDriver = driver
-                        currentDeviceName = deviceName
-
-                        // 연결 상태 모니터링 시작
-                        startConnectionMonitoring(driver)
-
-                        Log.i(TAG, "프린터 연결 성공: $deviceName (${driver.getType()})")
-                        result.success(true)
-                    } else {
-                        Log.e(TAG, "프린터 연결 실패")
-                        result.error("CONNECT_FAIL", "프린터 연결 실패", null)
-                    }
-                } catch (e: BluetoothDeviceSearcher.BluetoothNotSupportedException) {
-                    result.error("NO_ADAPTER", e.message, null)
-                } catch (e: BluetoothDeviceSearcher.BluetoothNotEnabledException) {
-                    result.error("NOT_ENABLED", e.message, null)
-                } catch (e: BluetoothDeviceSearcher.DeviceNotFoundException) {
-                    result.error("NOT_FOUND", e.message, null)
-                } catch (e: Exception) {
-                    Log.e(TAG, "연결 중 오류 발생", e)
-                    result.error("CONNECT_FAIL", "연결 실패: ${e.message}", null)
                 }
             }
 
@@ -306,6 +326,9 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
         currentDriver = null
         currentDeviceName = null
         eventSink = null
+
+        // 스레드 풀 종료
+        executorService.shutdown()
 
         Log.i(TAG, "BlueberryPrinter 플러그인 해제")
     }
