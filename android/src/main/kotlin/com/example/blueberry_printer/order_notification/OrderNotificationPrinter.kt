@@ -102,7 +102,7 @@ object OrderNotificationPrinter {
         outputStream.write(bitmap)
         outputStream.flush()
 
-        feedPaper(outputStream, 2)
+        feedPaper(outputStream, 1)
     }
 
     /**
@@ -129,7 +129,7 @@ object OrderNotificationPrinter {
         outputStream.write(bitmap)
         outputStream.flush()
 
-        feedPaper(outputStream, 2)
+        feedPaper(outputStream, 1)
     }
 
     /**
@@ -211,9 +211,6 @@ object OrderNotificationPrinter {
             if (itemOptions.isNotEmpty()) {
                 printMenuItemOptions(outputStream, itemOptions, localizer)
             }
-
-            // 메뉴 아이템 간 간격
-            feedPaper(outputStream, 2)
         }
     }
 

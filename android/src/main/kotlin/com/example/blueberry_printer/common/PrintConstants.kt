@@ -29,7 +29,7 @@ object PrintConstants {
         const val AFTER_TOTAL = 2        // 합계 후
         const val BEFORE_THANK_YOU = 2   // 감사메시지 전
         const val AFTER_THANK_YOU = 3    // 감사메시지 후
-        const val BEFORE_CUT = 200       // 영수증 자르기 전
+        const val BEFORE_CUT = 3         // 영수증 자르기 전
     }
 
     // 점포용 라벨 설정
