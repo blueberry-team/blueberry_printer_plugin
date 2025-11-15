@@ -516,14 +516,15 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                 val menuText = "$displayName x$quantity"
                 val priceText = formatCurrency(price, currency)
 
-                // 메뉴명과 가격을 같은 줄에
-                val lineWidth = 32
-                val spacingCount = maxOf(1, lineWidth - menuText.length - priceText.length)
-                val spacing = " ".repeat(spacingCount)
-
+                // 메뉴명 (왼쪽 정렬)
                 printerBuilder
                     .styleAlignment(Alignment.Left)
-                    .actionPrintText(menuText + spacing + priceText + "\n")
+                    .actionPrintText(menuText)
+
+                // 가격 (오른쪽 정렬, 같은 줄)
+                printerBuilder
+                    .styleAlignment(Alignment.Right)
+                    .actionPrintText("$priceText\n")
 
                 // 옵션 출력
                 val menuOptionItems = menu["menuOptionItems"] as? List<Map<String, Any>>
@@ -539,14 +540,22 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                             ?: selectedItem["quantity"] as? Int ?: 0
 
                         if (itemPrice > 0) {
-                            // 옵션 텍스트
+                            // 옵션명 (왼쪽 정렬)
                             val optionText = "  + $itemName x$itemQuantity"
                             val optionPriceText = formatCurrency(itemPrice * itemQuantity, currency)
-                            val optionSpacingCount = maxOf(1, lineWidth - optionText.length - optionPriceText.length)
-                            val optionSpacing = " ".repeat(optionSpacingCount)
-                            printerBuilder.actionPrintText(optionText + optionSpacing + optionPriceText + "\n")
+
+                            printerBuilder
+                                .styleAlignment(Alignment.Left)
+                                .actionPrintText(optionText)
+
+                            // 옵션 가격 (오른쪽 정렬, 같은 줄)
+                            printerBuilder
+                                .styleAlignment(Alignment.Right)
+                                .actionPrintText("$optionPriceText\n")
                         } else {
-                            printerBuilder.actionPrintText("  + $itemName\n")
+                            printerBuilder
+                                .styleAlignment(Alignment.Left)
+                                .actionPrintText("  + $itemName\n")
                         }
                     }
                 }

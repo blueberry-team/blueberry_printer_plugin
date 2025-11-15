@@ -486,13 +486,13 @@ public class StarIoDriver: NSObject {
                     let menuText = String(format: "%@ x%d", displayName, quantity)
                     let priceText = formatCurrency(price, currency)
 
-                    // 메뉴명과 가격을 같은 줄에 (왼쪽: 메뉴, 오른쪽: 가격)
-                    let lineWidth = 32
-                    let spacingCount = max(1, lineWidth - menuText.count - priceText.count)
-                    let spacing = String(repeating: " ", count: spacingCount)
-
+                    // 메뉴명 (왼쪽 정렬)
                     _ = printerBuilder.styleAlignment(.left)
-                    _ = printerBuilder.actionPrintText(menuText + spacing + priceText + "\n")
+                    _ = printerBuilder.actionPrintText(menuText)
+
+                    // 가격 (오른쪽 정렬, 같은 줄)
+                    _ = printerBuilder.styleAlignment(.right)
+                    _ = printerBuilder.actionPrintText(priceText + "\n")
 
                     // 옵션 출력
                     if let menuOptionItems = menu["menuOptionItems"] as? [[String: Any]] {
@@ -507,13 +507,18 @@ public class StarIoDriver: NSObject {
                                         ?? selectedItem["quantity"] as? Int ?? 0
 
                                     if itemPrice > 0 {
-                                        // 옵션 텍스트
+                                        // 옵션명 (왼쪽 정렬)
                                         let optionText = String(format: "  + %@ x%d", itemName, itemQuantity)
                                         let optionPriceText = formatCurrency(itemPrice * Double(itemQuantity), currency)
-                                        let optionSpacingCount = max(1, lineWidth - optionText.count - optionPriceText.count)
-                                        let optionSpacing = String(repeating: " ", count: optionSpacingCount)
-                                        _ = printerBuilder.actionPrintText(optionText + optionSpacing + optionPriceText + "\n")
+
+                                        _ = printerBuilder.styleAlignment(.left)
+                                        _ = printerBuilder.actionPrintText(optionText)
+
+                                        // 옵션 가격 (오른쪽 정렬, 같은 줄)
+                                        _ = printerBuilder.styleAlignment(.right)
+                                        _ = printerBuilder.actionPrintText(optionPriceText + "\n")
                                     } else {
+                                        _ = printerBuilder.styleAlignment(.left)
                                         _ = printerBuilder.actionPrintText(String(format: "  + %@\n", itemName))
                                     }
                                 }
