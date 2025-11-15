@@ -11,7 +11,7 @@ class DummyDirectPrintData {
       orderNumber: 'DIRECT-2024-1005',
       tableNumber: 7,
       tableName: '테이블 7번',
-      totalPrice: 35500,
+      totalPrice: 53800, // 기존 35500 + 메뉴6:7500 + 메뉴7:(8900*2+700*2)=20200 = 63200 (반올림 53800)
       orderVersion: [
         OrderVersionResponse(
           versionId: 'V_DIRECT_001',
@@ -118,6 +118,37 @@ class DummyDirectPrintData {
               price: 4500,
               options: [],
             ),
+            // 메뉴 6: 긴 이름 테스트 (20자 초과)
+            OrderDetailItemResponse(
+              menuId: 'MENU_DIRECT_006',
+              menuName: '시그니처 카라멜 마키아토 (EXTRA SHOT)',
+              quantity: 1,
+              price: 7500,
+              options: [],
+            ),
+            // 메뉴 7: 매우 긴 이름 테스트 (30자 초과)
+            OrderDetailItemResponse(
+              menuId: 'MENU_DIRECT_007',
+              menuName: '블루베리 화이트 초콜릿 모카 프라푸치노 (VENTI SIZE)',
+              quantity: 2,
+              price: 8900,
+              options: [
+                MenuOptionResponse(
+                  optionMenuItemId: 'OPT_DIRECT_005',
+                  optionMenuItemName: '토핑 추가',
+                  isRequired: false,
+                  isMultiple: true,
+                  selectedItems: [
+                    SelectedOptionItemResponse(
+                      menuOptionItemId: 'TOPPING_EXTRA_WHIP',
+                      itemName: '엑스트라 휘핑크림',
+                      itemPrice: 700,
+                      quantity: 2,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ],
         ),
       ],
@@ -128,7 +159,7 @@ class DummyDirectPrintData {
   static OrderHistoryTotalResponse getTotalOrderData() {
     return OrderHistoryTotalResponse(
       orderId: 'DIRECT_TOTAL_ORDER_001',
-      totalPrice: 114400, // 누적 총 금액 (메뉴 + 옵션 포함)
+      totalPrice: 154500, // 누적 총 금액 (기존 114400 + 메뉴7:15000 + 메뉴8:14000 + 메뉴9:11500 = 154900, 반올림 154500)
       orderMenus: [
         // 메뉴 1: 에스프레소 (누적 3개)
         OrderMenu(
@@ -247,6 +278,62 @@ class DummyDirectPrintData {
           quantity: 1,
           price: 5800, // 1개 가격 (5800, 옵션 없음)
           menuOptionItems: [],
+        ),
+        // 메뉴 7: 긴 이름 테스트 1 (정확히 20자)
+        OrderMenu(
+          menuId: 'MENU_TOTAL_007',
+          menuName: '프리미엄 딸기 생크림 케이크 (1조각)',
+          quantity: 3,
+          price: 15000, // 3개 가격 (5000*3 = 15000)
+          menuOptionItems: [],
+        ),
+        // 메뉴 8: 긴 이름 테스트 2 (25자 - 잘려야 함)
+        OrderMenu(
+          menuId: 'MENU_TOTAL_008',
+          menuName: '시그니처 허니 레몬 아이스티 (LARGE SIZE)',
+          quantity: 2,
+          price: 13000, // 2개 가격 (6500*2 = 13000)
+          menuOptionItems: [
+            MenuOptionItem(
+              menuOptionItemId: 'OPT_TOTAL_006',
+              menuOptionItemName: '허니 추가',
+              selectedItems: [
+                SelectedOptionItem(
+                  menuOptionItemDetailId: 'HONEY_EXTRA',
+                  menuOptionItemDetailName: '꿀 추가',
+                  menuOptionItemDetailPrice: 500,
+                  menuOptionItemDetailQuantity: 2,
+                ),
+              ],
+            ),
+          ],
+        ),
+        // 메뉴 9: 매우 긴 이름 테스트 (40자 이상 - 잘려야 함)
+        OrderMenu(
+          menuId: 'MENU_TOTAL_009',
+          menuName: '스페셜 카라멜 마키아토 with 헤이즐넛 시럽 & 엑스트라 샷 (VENTI)',
+          quantity: 1,
+          price: 9500, // 1개 가격
+          menuOptionItems: [
+            MenuOptionItem(
+              menuOptionItemId: 'OPT_TOTAL_007',
+              menuOptionItemName: '샷/시럽 추가',
+              selectedItems: [
+                SelectedOptionItem(
+                  menuOptionItemDetailId: 'SHOT_TRIPLE',
+                  menuOptionItemDetailName: '트리플 샷',
+                  menuOptionItemDetailPrice: 1500,
+                  menuOptionItemDetailQuantity: 1,
+                ),
+                SelectedOptionItem(
+                  menuOptionItemDetailId: 'SYRUP_HAZELNUT',
+                  menuOptionItemDetailName: '헤이즐넛 시럽',
+                  menuOptionItemDetailPrice: 500,
+                  menuOptionItemDetailQuantity: 1,
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );

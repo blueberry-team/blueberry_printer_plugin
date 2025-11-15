@@ -511,16 +511,19 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                 val quantity = menu["quantity"] as? Int ?: 0
                 val price = (menu["price"] as? Number)?.toInt() ?: 0
 
-                // 메뉴명 + 수량 (왼쪽 정렬)
-                printerBuilder
-                    .styleAlignment(Alignment.Left)
-                    .actionPrintText("$menuName x$quantity\n")
+                // 메뉴명 길이 제한 (20자)
+                val displayName = if (menuName.length > 20) menuName.take(20) + "..." else menuName
+                val menuText = "$displayName x$quantity"
+                val priceText = formatCurrency(price, currency)
 
-                // 가격 (오른쪽 정렬)
+                // 메뉴명과 가격을 같은 줄에
+                val lineWidth = 48
+                val spacingCount = maxOf(1, lineWidth - menuText.length - priceText.length)
+                val spacing = " ".repeat(spacingCount)
+
                 printerBuilder
-                    .styleAlignment(Alignment.Right)
-                    .actionPrintText("${formatCurrency(price, currency)}\n")
                     .styleAlignment(Alignment.Left)
+                    .actionPrintText(menuText + spacing + priceText + "\n")
 
                 // 옵션 출력
                 val menuOptionItems = menu["menuOptionItems"] as? List<Map<String, Any>>
@@ -536,13 +539,12 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                             ?: selectedItem["quantity"] as? Int ?: 0
 
                         if (itemPrice > 0) {
-                            // 옵션명 + 수량
-                            printerBuilder.actionPrintText("  + $itemName x$itemQuantity\n")
-                            // 옵션 가격 (오른쪽 정렬)
-                            printerBuilder
-                                .styleAlignment(Alignment.Right)
-                                .actionPrintText("${formatCurrency(itemPrice * itemQuantity, currency)}\n")
-                                .styleAlignment(Alignment.Left)
+                            // 옵션 텍스트
+                            val optionText = "  + $itemName x$itemQuantity"
+                            val optionPriceText = formatCurrency(itemPrice * itemQuantity, currency)
+                            val optionSpacingCount = maxOf(1, lineWidth - optionText.length - optionPriceText.length)
+                            val optionSpacing = " ".repeat(optionSpacingCount)
+                            printerBuilder.actionPrintText(optionText + optionSpacing + optionPriceText + "\n")
                         } else {
                             printerBuilder.actionPrintText("  + $itemName\n")
                         }
