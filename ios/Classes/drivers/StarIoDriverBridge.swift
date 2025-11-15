@@ -391,7 +391,7 @@ public class StarIoDriver: NSObject {
         _ = printerBuilder.styleBold(false)
 
         // 구분선
-        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 48) + "\n")
+        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 32) + "\n")
 
         // 메뉴 아이템 출력
         for item in items {
@@ -472,7 +472,7 @@ public class StarIoDriver: NSObject {
         }
 
         _ = printerBuilder.styleAlignment(.left)
-        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 48) + "\n")
+        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 32) + "\n")
 
         // 주문 항목들 (orderMenus 키 사용)
         if let orderMenus = orderData["orderMenus"] as? [[String: Any]] {
@@ -487,7 +487,7 @@ public class StarIoDriver: NSObject {
                     let priceText = formatCurrency(price, currency)
 
                     // 메뉴명과 가격을 같은 줄에 (왼쪽: 메뉴, 오른쪽: 가격)
-                    let lineWidth = 48
+                    let lineWidth = 32
                     let spacingCount = max(1, lineWidth - menuText.count - priceText.count)
                     let spacing = String(repeating: " ", count: spacingCount)
 
@@ -524,7 +524,7 @@ public class StarIoDriver: NSObject {
             }
         }
 
-        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 48) + "\n")
+        _ = printerBuilder.actionPrintText(String(repeating: "-", count: 32) + "\n")
 
         // 합계 (totalPrice 키 사용)
         if let total = orderData["totalPrice"] as? Double {

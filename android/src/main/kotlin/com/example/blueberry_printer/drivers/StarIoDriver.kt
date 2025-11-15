@@ -414,7 +414,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
         }
 
         // 구분선
-        printerBuilder.actionPrintText("${"-".repeat(48)}\n")
+        printerBuilder.actionPrintText("${"-".repeat(32)}\n")
 
         // 합계
         val totalPrice = orderData["totalPrice"] as? Int ?: 0
@@ -517,7 +517,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
                 val priceText = formatCurrency(price, currency)
 
                 // 메뉴명과 가격을 같은 줄에
-                val lineWidth = 48
+                val lineWidth = 32
                 val spacingCount = maxOf(1, lineWidth - menuText.length - priceText.length)
                 val spacing = " ".repeat(spacingCount)
 
@@ -554,7 +554,7 @@ class StarIoDriver(private val context: Context) : PrinterDriver {
         }
 
         // 구분선
-        printerBuilder.actionPrintText("${"-".repeat(48)}\n")
+        printerBuilder.actionPrintText("${"-".repeat(32)}\n")
 
         // 합계
         val totalPrice = (orderData["totalPrice"] as? Number)?.toInt() ?: 0
