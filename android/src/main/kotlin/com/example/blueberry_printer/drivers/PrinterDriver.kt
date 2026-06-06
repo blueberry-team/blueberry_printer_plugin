@@ -14,7 +14,6 @@ interface PrinterDriver {
      */
     enum class PrinterType {
         ESC_POS,        // ESC/POS 호환 프린터
-        STAR_MICRONICS, // Star Micronics 프린터
         AUTO            // 자동 감지
     }
 

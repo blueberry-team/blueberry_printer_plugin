@@ -32,10 +32,6 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 build/
 
-# Star Micronics SDK (downloads)
-ios/StarIO10.xcframework/
-ios/StarXpand-SDK*/
-
 # Local settings
 .claude/settings.local.json
 

@@ -15,7 +15,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 typedef NS_ENUM(NSInteger, PrinterType) {
     PrinterTypeESCPOS,          // ESC/POS 프린터
-    PrinterTypeStarMicronics,   // Star Micronics 프린터
     PrinterTypeAuto             // 자동 감지
 };
 

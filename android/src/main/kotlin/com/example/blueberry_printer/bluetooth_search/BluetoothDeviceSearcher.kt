@@ -95,23 +95,11 @@ object BluetoothDeviceSearcher {
     /**
      * 프린터 타입 감지
      * @param deviceName 기기 이름
-     * @return 프린터 타입 ("star_micronics" or "esc_pos")
+     * @return 프린터 타입 ("esc_pos", Star 프린터 지원 제거됨)
      */
     fun detectPrinterType(deviceName: String): String {
-        val lowerName = deviceName.lowercase()
-
-        return when {
-            // Star Micronics 프린터 모델명 패턴
-            lowerName.contains("mcp") -> "star_micronics"  // mCP31LB, mCP30, etc.
-            lowerName.contains("mc-print") -> "star_micronics"
-            lowerName.contains("mc print") -> "star_micronics"
-            lowerName.contains("tsp") -> "star_micronics"  // TSP100, TSP650, etc.
-            lowerName.contains("star") -> "star_micronics"
-            lowerName.contains("sm-") -> "star_micronics"  // SM- 시리즈
-
-            // 기타 모든 프린터는 ESC/POS로 간주
-            else -> "esc_pos"
-        }.also {
+        // Star 프린터 지원 제거: 모든 프린터를 ESC/POS로 간주
+        return "esc_pos".also {
             Log.d(TAG, "프린터 타입 감지: $deviceName -> $it")
         }
     }

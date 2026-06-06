@@ -230,15 +230,7 @@ Future<bool> disconnect()
 - 58mm, 80mm 용지 폭 지원
 - 대부분의 POS 프린터와 호환
 
-#### Star Micronics 프린터 (자동 감지)
-- **mC-Print 시리즈**: mC-Print3 (MCP31LB WT 포함), mC-Print2
-- **TSP 시리즈**: TSP100, TSP650, TSP700, TSP800
-- **mC-Label 시리즈**: mC-Label3, mC-Label2
-- **기타**: mPOP, BSC10, SK 시리즈
-- StarXpand SDK (StarIO10 1.11.1) 사용
-
-> **자동 프린터 감지**: 프린터 이름에 "mCP", "MC-Print", "TSP", "Star" 등이 포함되면 자동으로 StarXpand SDK를 사용합니다.
-> 사용자는 프린터 타입을 별도로 지정할 필요가 없습니다.
+> **참고**: Star Micronics(StarXpand/StarIO10) 프린터 지원은 제거되었습니다. 현재는 ESC/POS 호환 프린터만 지원합니다.
 
 ## 🔧 문제 해결
 
@@ -282,7 +274,6 @@ flutter run
 - Flutter 플랫폼 채널
 - Android 블루투스 API
 - ESC/POS 프린터 명령 표준
-- Star Micronics StarXpand SDK (StarIO10 1.11.1)
 
 ---
 

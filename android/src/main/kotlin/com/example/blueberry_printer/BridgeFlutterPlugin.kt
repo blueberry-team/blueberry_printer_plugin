@@ -9,7 +9,6 @@ import io.flutter.plugin.common.MethodChannel.Result
 import android.util.Log
 import com.example.blueberry_printer.drivers.PrinterDriver
 import com.example.blueberry_printer.drivers.EscPosDriver
-import com.example.blueberry_printer.drivers.StarIoDriver
 import com.example.blueberry_printer.bluetooth_search.BluetoothDeviceSearcher
 import io.flutter.plugin.common.EventChannel
 import android.os.Handler
@@ -101,17 +100,9 @@ class BridgeFlutterPlugin: FlutterPlugin, MethodCallHandler, EventChannel.Stream
                         // 기존 드라이버 정리
                         currentDriver?.cleanup()
 
-                        // 프린터 타입에 따라 적절한 드라이버 선택
-                        val driver: PrinterDriver = when (printerType) {
-                            "star_micronics" -> {
-                                Log.i(TAG, "Star Micronics 드라이버 사용")
-                                StarIoDriver(context)
-                            }
-                            else -> {
-                                Log.i(TAG, "ESC/POS 드라이버 사용")
-                                EscPosDriver()
-                            }
-                        }
+                        // ESC/POS 드라이버 사용 (Star 프린터 지원 제거됨)
+                        Log.i(TAG, "ESC/POS 드라이버 사용")
+                        val driver: PrinterDriver = EscPosDriver()
 
                         // 프린터 연결
                         val connected = driver.connect(address)

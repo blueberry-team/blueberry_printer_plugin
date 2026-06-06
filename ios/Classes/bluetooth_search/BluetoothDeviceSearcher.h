@@ -49,7 +49,7 @@ typedef void(^PrinterDiscoveryCallback)(Printer* _Nullable printer);
 /**
  * 기기 이름으로 프린터 타입 자동 감지
  * @param deviceName 프린터 기기 이름
- * @return "star_micronics" 또는 "esc_pos"
+ * @return "esc_pos" (Star 프린터 지원 제거됨)
  */
 + (NSString*)detectPrinterType:(NSString*)deviceName;
 

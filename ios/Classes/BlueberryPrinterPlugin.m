@@ -11,9 +11,6 @@
 #import "bluetooth_search/BluetoothDeviceSearcher.h"
 #import "common/DisconnectReason.h"
 
-// StarIoDriver는 Swift로 구현되어 런타임에 로드
-@class StarIoDriver;
-
 @interface BlueberryPrinterPlugin () <FlutterStreamHandler>
 {
     NSMutableDictionary* _discoveredPrinters;
@@ -162,58 +159,6 @@
     if (!deviceInfo) {
         NSLog(@"❌ 프린터를 찾을 수 없음");
         result([FlutterError errorWithCode:@"NOT_FOUND" message:@"프린터를 찾을 수 없습니다" details:nil]);
-        return;
-    }
-
-    NSString* deviceName = deviceInfo[@"name"] ?: @"Unknown";
-    NSString* printerType = [BluetoothDeviceSearcher detectPrinterType:deviceName];
-
-    NSLog(@"🔍 감지된 프린터 타입: %@ (기기명: %@)", printerType, deviceName);
-
-    // Star 프린터는 StarIoDriver 사용
-    if ([printerType isEqualToString:@"star_micronics"]) {
-        NSLog(@"📌 StarIoDriver 선택 (Star Micronics 프린터)");
-
-        // Swift로 구현된 StarIoDriver를 런타임에 로드
-        Class starDriverClass = NSClassFromString(@"StarIoDriver");
-        if (!starDriverClass) {
-            NSLog(@"❌ StarIoDriver 클래스를 찾을 수 없습니다");
-            result([FlutterError errorWithCode:@"CONNECTION_FAILED"
-                                       message:@"StarIoDriver 클래스를 찾을 수 없습니다"
-                                       details:nil]);
-            return;
-        }
-
-        id<PrinterDriver> starDriver = [[starDriverClass alloc] init];
-        NSLog(@"✅ StarIoDriver 인스턴스 생성 완료");
-
-        // 드라이버로 연결 (StarDeviceDiscovery에서 받은 identifier 사용)
-        NSError* error = nil;
-        NSLog(@"📌 StarIO10 identifier로 연결 시도: %@", address);
-        BOOL connected = [starDriver connectWithAddress:address error:&error];
-
-        if (connected) {
-            self.currentDriver = starDriver;
-            self.connectedPrinter = nil; // Star 프린터는 Printer 객체 없음
-
-            // 연결 모니터링 시작
-            __weak typeof(self) weakSelf = self;
-            [starDriver startConnectionMonitoringWithCallback:^(NSString* status) {
-                __strong typeof(weakSelf) strongSelf = weakSelf;
-                if (strongSelf) {
-                    [strongSelf sendConnectionStatus:status message:@"" reason:@""];
-                }
-            }];
-
-            NSLog(@"✅ Star 프린터 연결 완료");
-            [self sendConnectionStatus:@"connected" message:@"" reason:@""];
-            result(@YES);
-        } else {
-            NSLog(@"❌ Star 프린터 연결 실패: %@", error.localizedDescription);
-            result([FlutterError errorWithCode:@"CONNECTION_FAILED"
-                                       message:error.localizedDescription ?: @"Star 프린터 연결 실패"
-                                       details:nil]);
-        }
         return;
     }
 
